@@ -25,6 +25,7 @@ import com.evolveum.midpoint.web.page.error.PageError401;
 import com.evolveum.midpoint.web.page.error.PageError403;
 import com.evolveum.midpoint.web.page.error.PageError404;
 import com.evolveum.midpoint.web.page.login.PageLogin;
+import com.evolveum.midpoint.web.page.forgetpassword.PageForgetPassword;
 import com.evolveum.midpoint.web.page.test.PageTest;
 import com.evolveum.midpoint.web.util.MidPointPageParametersEncoder;
 import com.evolveum.midpoint.web.util.OnePageParameterEncoder;
@@ -39,7 +40,9 @@ import static com.evolveum.midpoint.common.security.AuthorizationConstants.*;
 public enum PageUrlMapping {
 
     LOGIN("/login", PageLogin.class, MidPointPageParametersEncoder.ENCODER, null),
-
+    FORGETPASSWORD("/forgetpassword", PageForgetPassword.class, MidPointPageParametersEncoder.ENCODER,new String[]{AUTZ_UI_PERMIT_ALL_URL}),
+    
+    
     ADMIN_DASHBOARD("/admin/dashboard", PageDashboard.class, MidPointPageParametersEncoder.ENCODER, new String[]{AUTZ_UI_DASHBOARD_URL, AUTZ_UI_HOME_ALL_URL}),
 
     ADMIN_MY_PASSWORDS("/admin/myPasswords", PageMyPasswords.class, MidPointPageParametersEncoder.ENCODER, new String[]{AUTZ_UI_MY_PASSWORDS_URL, AUTZ_UI_HOME_ALL_URL}),

@@ -30,7 +30,7 @@
     	<repository>
 		<id>activiti</id>
 		<name>Activiti</name>
-		<url>https://maven.alfresco.com/nexus/content/repositories/activiti/</url>
+		<url>https://maven.alfresco.com/nexus/content/groups/public</url>
 	</repository>
     </repositories>
 

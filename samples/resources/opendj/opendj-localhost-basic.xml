@@ -34,7 +34,7 @@ This resource definition contains only the very basic definitions for midPoint t
 	<resource>
     
     	<!-- Resource name. It will be displayed in GUI.  -->
-		<name>Basic Localhost OpenDJ</name>
+		<name>LDAP</name>
      
      	<!-- Reference to the ICF LDAP connector. OID is "virtual" for now. -->
 		<connectorRef type="ConnectorType">
@@ -54,12 +54,14 @@ This resource definition contains only the very basic definitions for midPoint t
 
             <!-- Configuration specific for the LDAP connector -->
 			<icfc:configurationProperties>
-				<icfi:port>1389</icfi:port>
-				<icfi:host>localhost</icfi:host>
-				<icfi:baseContexts>dc=example,dc=com</icfi:baseContexts>
-				<icfi:principal>uid=idm,ou=Administrators,dc=example,dc=com</icfi:principal>
-				<icfi:credentials><clearValue>secret</clearValue></icfi:credentials>
-				<icfi:modifiersNamesToFilterOut>uid=idm,ou=Administrators,dc=example,dc=com</icfi:modifiersNamesToFilterOut>
+				<icfi:port>389</icfi:port>
+<icfi:host>10.61.12.5</icfi:host>
+<icfi:baseContexts>dc=ds,dc=gov,dc=tr</icfi:baseContexts>
+<icfi:principal>cn=admin,dc=ds,dc=gov,dc=tr</icfi:principal>
+<icfi:credentials>
+<clearValue>sl4P04Prd_s</clearValue>
+</icfi:credentials>
+<icfi:modifiersNamesToFilterOut>dc=ds,dc=gov,dc=tr</icfi:modifiersNamesToFilterOut>
 				<icfi:vlvSortAttribute>uid</icfi:vlvSortAttribute>
 				<icfi:usePagedResultControl>true</icfi:usePagedResultControl>
 			</icfc:configurationProperties>
