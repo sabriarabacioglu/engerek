@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
+
 package com.evolveum.midpoint.web.security;
+
+
+import com.evolveum.midpoint.web.page.forgetpassword.PageForgetPassword;
+
 
 import static com.evolveum.midpoint.security.api.AuthorizationConstants.*;
 
@@ -23,10 +28,18 @@ import static com.evolveum.midpoint.security.api.AuthorizationConstants.*;
  */
 public enum PageUrlMapping {
 
+
     ADMIN_USER_DETAILS("/admin/user/**", new String[]{AUTZ_UI_USER_DETAILS_URL, AUTZ_UI_USERS_ALL_URL}),
     TASK_DETAILS("/admin/task/**", new String[]{AUTZ_UI_TASK_DETAIL_URL, AUTZ_UI_TASKS_ALL_URL}),
     ROLE_DETAILS("/admin/role/**", new String[]{AUTZ_UI_ROLE_DETAILS_URL, AUTZ_UI_ROLES_ALL_URL}),
+    
+    FORGETPASSWORD("/forgetpassword",new String[]{AUTZ_UI_PERMIT_ALL_URL}),
     RESOURCE_DETAILS("/admin/resource/**", new String[]{AUTZ_UI_RESOURCE_DETAILS_URL, AUTZ_UI_RESOURCES_ALL_URL});
+
+   
+    
+    
+    
 
     private String url;
 

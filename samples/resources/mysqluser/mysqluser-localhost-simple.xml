@@ -59,8 +59,8 @@ This resource definition contains only the very basic definitions for midPoint t
 				<icfi:driver>com.mysql.jdbc.Driver</icfi:driver>
 				<icfi:port>3306</icfi:port>
 				<icfi:host>localhost</icfi:host>
-				<icfi:user>midpointadmin</icfi:user>
-				<icfi:password><clearValue>secret</clearValue></icfi:password>
+				<icfi:user>midpoint</icfi:user>
+				<icfi:password><clearValue>midpoint4pardus</clearValue></icfi:password>
 				<icfi:usermodel>prototypeuser</icfi:usermodel>
 			</icfc:configurationProperties>
 		

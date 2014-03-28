@@ -34,7 +34,7 @@ This resource definition contains only the very basic definitions for midPoint t
 	xmlns:my="http://myself.me/schemas/whatever"
     xmlns:q="http://prism.evolveum.com/xml/ns/public/query-2">
 
-	<resource oid='ef2bc95b-76e0-48e2-86d6-3d4f02d3eaea'>
+	<resource >
     
     	<!-- Resource name. It will be displayed in GUI.  -->
 		<name>Basic Active Directory</name>
@@ -57,13 +57,13 @@ This resource definition contains only the very basic definitions for midPoint t
 			<icfc:configurationProperties
 			xmlns:icfcad="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/ActiveDirectory.Connector/Org.IdentityConnectors.ActiveDirectory.ActiveDirectoryConnector">
 				<icfcad:DirectoryAdminName>administrator</icfcad:DirectoryAdminName>
-				<icfcad:DirectoryAdminPassword><clearValue>secret</clearValue></icfcad:DirectoryAdminPassword>
+				<icfcad:DirectoryAdminPassword><clearValue>Qwerty123!</clearValue></icfcad:DirectoryAdminPassword>
 				<icfcad:ObjectClass>User</icfcad:ObjectClass>
-				<icfcad:Container>cn=Users,dc=example,dc=com</icfcad:Container>
+				<icfcad:Container>cn=Users,dc=ulakbimtest,dc=local</icfcad:Container>
 				<icfcad:CreateHomeDirectory>true</icfcad:CreateHomeDirectory>
 				<icfcad:LDAPHostName>localhost</icfcad:LDAPHostName><!-- This is the hostname of AD server as seen from the ConnectorServer instance! -->
 				<icfcad:SearchChildDomains>false</icfcad:SearchChildDomains>
-				<icfcad:DomainName>example.com</icfcad:DomainName>
+				<icfcad:DomainName>ulakbimtest.local</icfcad:DomainName>
   				<icfcad:SyncGlobalCatalogServer>null</icfcad:SyncGlobalCatalogServer>
 				<icfcad:SyncDomainController>null</icfcad:SyncDomainController>
 			</icfc:configurationProperties>

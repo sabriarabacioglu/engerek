@@ -27,6 +27,7 @@
         <version>2.3-SNAPSHOT</version>
     </parent>
 
+
     <dependencies>
         <dependency>
             <groupId>com.evolveum.midpoint.model</groupId>
