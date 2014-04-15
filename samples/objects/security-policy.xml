@@ -31,7 +31,14 @@
 			</question>
 			<question>
 				<identifier>http://midpoint.evolveum.com/xml/ns/public/security/question-2#q002</identifier>
+				<enabled>true</enabled>
 				<!-- TODO: sabri -->
+			</question>
+			<question>
+			<identifier>http://midpoint.evolveum.com/xml/ns/public/security/question-2#q003
+			
+			</identifier>
+			<enabled>true</enabled>
 			</question>
 		</securityQuestions>
 	</credentials>

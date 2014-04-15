@@ -27,6 +27,11 @@
         <version>2.3-SNAPSHOT</version>
     </parent>
 
+    <scm>
+        <connection>https://github.com/Evolveum/midpoint.git</connection>
+        <developerConnection>git@github.com:Evolveum/midpoint.git</developerConnection>
+        <url>https://fisheye.evolveum.com/browse/midPoint</url>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -150,6 +155,7 @@
             <groupId>com.evolveum.midpoint.repo</groupId>
             <artifactId>repo-test-util</artifactId>
             <version>2.3-SNAPSHOT</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.evolveum.midpoint.repo</groupId>
@@ -204,6 +210,7 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>aspectj-maven-plugin</artifactId>
+                        <version>1.6</version>
                         <configuration>
                             <aspectLibraries>
                                 <aspectLibrary>

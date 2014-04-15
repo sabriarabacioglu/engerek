@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.evolveum.midpoint.prism.PrismContainer;
+
 /**
  * @author lazyman
  */
@@ -30,6 +32,8 @@ public class MyPasswordsDto implements Serializable {
 
     private List<PasswordAccountDto> accounts;
     private String password;
+  
+    private PrismContainer credentials;
 
     public List<PasswordAccountDto> getAccounts() {
         if (accounts == null) {
@@ -44,5 +48,13 @@ public class MyPasswordsDto implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public PrismContainer getCredentials() {
+        return credentials;
+    }
+
+    public void setCredentials(PrismContainer credentials) {
+        this.credentials = credentials;
     }
 }

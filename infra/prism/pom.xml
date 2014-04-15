@@ -27,6 +27,11 @@
         <groupId>com.evolveum.midpoint</groupId>
         <version>2.3-SNAPSHOT</version>
     </parent>
+    <scm>
+        <connection>https://github.com/Evolveum/midpoint.git</connection>
+        <developerConnection>git@github.com:Evolveum/midpoint.git</developerConnection>
+        <url>https://fisheye.evolveum.com/browse/midPoint</url>
+    </scm>
     <dependencies>
         <dependency>
             <groupId>com.evolveum.midpoint.infra</groupId>
@@ -47,14 +52,34 @@
             <artifactId>commons-lang</artifactId>
         </dependency>
         <dependency>
-	<groupId>org.codehaus.jackson</groupId>
-	<artifactId>jackson-core-asl</artifactId>
-	<version>1.9.13</version>
+			<groupId>org.apache.santuario</groupId>
+			<artifactId>xmlsec</artifactId>
+			<version>1.4.5</version>
+		</dependency>
+<!--         <dependency> -->
+<!-- 	<groupId>org.codehaus.jackson</groupId> -->
+<!-- 	<artifactId>jackson-core-asl</artifactId> -->
+<!-- 	<version>1.9.13</version> -->
+<!-- </dependency> -->
+<!--             <dependency> -->
+<!-- 	<groupId>org.codehaus.jackson</groupId> -->
+<!-- 	<artifactId>jackson-mapper-asl</artifactId> -->
+<!-- 	<version>1.9.13</version> -->
+<!-- </dependency> -->
+<!-- <dependency> -->
+<!--   <groupId>com.fasterxml.jackson.module</groupId> -->
+<!--   <artifactId>jackson-module-jaxb-annotations</artifactId> -->
+<!--   <version>2.0.5</version> -->
+<!-- </dependency> -->
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-core</artifactId>
+  <version>2.3.1</version>
 </dependency>
-            <dependency>
-	<groupId>org.codehaus.jackson</groupId>
-	<artifactId>jackson-mapper-asl</artifactId>
-	<version>1.9.13</version>
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-annotations</artifactId>
+  <version>2.3.1</version>
 </dependency>
 
         <!-- Xtext
@@ -79,6 +104,28 @@
             <version>2.5.1</version>
         </dependency>
         -->
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-databind</artifactId>
+  <version>2.3.1</version>
+</dependency>
+<dependency>
+<!--  <groupId>com.fasterxml.jackson.datatype</groupId>
+  <artifactId>jackson-module-jsonSchema</artifactId>
+  <version>2.3.0</version>
+</dependency>
+<dependency> -->
+  <groupId>com.fasterxml.jackson.module</groupId>
+  <artifactId>jackson-module-jaxb-annotations</artifactId>
+  <version>2.3.1</version>
+</dependency>
+<dependency>
+  <groupId>com.fasterxml.jackson.dataformat</groupId>
+  <artifactId>jackson-dataformat-yaml</artifactId>
+  <version>2.3.1</version>
+</dependency>
+<!-- ::2.1.0 -->
+            
         <!-- TEST -->
         <dependency>
             <groupId>org.testng</groupId>

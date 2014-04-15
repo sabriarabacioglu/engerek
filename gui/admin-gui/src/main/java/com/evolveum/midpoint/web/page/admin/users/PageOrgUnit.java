@@ -20,6 +20,10 @@ import com.evolveum.midpoint.model.api.ModelService;
 import com.evolveum.midpoint.prism.*;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.path.ItemPath;
+import com.evolveum.midpoint.prism.query.InOidFilter;
+import com.evolveum.midpoint.prism.query.NotFilter;
+import com.evolveum.midpoint.prism.query.ObjectFilter;
+import com.evolveum.midpoint.prism.query.ObjectQuery;
 import com.evolveum.midpoint.prism.schema.SchemaRegistry;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.security.api.AuthorizationConstants;
@@ -69,8 +73,6 @@ public class PageOrgUnit extends PageAdminUsers {
     private static final String LOAD_UNIT = DOT_CLASS + "loadOrgUnit";
     private static final String SAVE_UNIT = DOT_CLASS + "saveOrgUnit";
     private static final String LOAD_PARENT_UNITS = DOT_CLASS + "loadParentOrgUnits";
-    private static final String OPERATION_LOAD_ASSIGNMENTS = DOT_CLASS + "loadAssignments";
-    private static final String OPERATION_LOAD_ASSIGNMENT = DOT_CLASS + "loadAssignment";
 
     private static final String ID_LABEL_SIZE = "col-md-4";
     private static final String ID_INPUT_SIZE = "col-md-6";
@@ -244,6 +246,34 @@ public class PageOrgUnit extends PageAdminUsers {
             }
 
             @Override
+            protected ObjectQuery createChooseQuery(){
+                ArrayList<String> oids = new ArrayList<String>();
+                ObjectQuery query = new ObjectQuery();
+
+                for(OrgType org: parentOrgUnitsModel.getObject()){
+                    if(org != null){
+                        if(org.getOid() != null && !org.getOid().isEmpty()){
+                            oids.add(org.getOid());
+                        }
+                    }
+                }
+
+                if(isEditing()){
+                    oids.add(orgModel.getObject().asObjectable().getOid());
+                }
+
+                if(oids.isEmpty()){
+                    return null;
+                }
+
+                ObjectFilter oidFilter = InOidFilter.createInOid(oids);
+                query.setFilter(NotFilter.createNot(oidFilter));
+                //query.setFilter(oidFilter);
+
+                return query;
+            }
+
+            @Override
             protected void replaceIfEmpty(Object object) {
 
                 boolean added = false;
@@ -272,6 +302,11 @@ public class PageOrgUnit extends PageAdminUsers {
             public List<AssignmentType> getAssignmentTypeList(){
                 return orgModel.getObject().asObjectable().getAssignment();
             }
+
+            @Override
+            public String getExcludeOid(){
+                return orgModel.getObject().asObjectable().getOid();
+            }
         };
         form.add(assignments);
 
@@ -281,6 +316,11 @@ public class PageOrgUnit extends PageAdminUsers {
             @Override
             public List<AssignmentType> getAssignmentTypeList(){
                 return orgModel.getObject().asObjectable().getInducement();
+            }
+
+            @Override
+            public String getExcludeOid(){
+                return orgModel.getObject().asObjectable().getOid();
             }
         };
         form.add(inducements);
@@ -338,19 +378,53 @@ public class PageOrgUnit extends PageAdminUsers {
             }
         }
 
-        if (parentOrgList != null && parentOrgUnitsModel != null && parentOrgUnitsModel.getObject() != null) {
+        //We are creating new OrgUnit
+        if(parentOrgList == null){
+            if(parentOrgUnitsModel != null && parentOrgUnitsModel.getObject() != null){
+                for (OrgType parent : parentOrgUnitsModel.getObject()) {
+                    if (parent != null && WebMiscUtil.getName(parent) != null && !WebMiscUtil.getName(parent).isEmpty()) {
+                        ObjectReferenceType ref = new ObjectReferenceType();
+                        ref.setOid(parent.getOid());
+                        ref.setType(OrgType.COMPLEX_TYPE);
+                        org.asObjectable().getParentOrgRef().add(ref);
+                    }
+                }
+            }
+        //We are editing OrgUnit
+        }else if (parentOrgUnitsModel != null && parentOrgUnitsModel.getObject() != null) {
             for (OrgType parent : parentOrgUnitsModel.getObject()) {
                 if (parent != null && WebMiscUtil.getName(parent) != null && !WebMiscUtil.getName(parent).isEmpty()) {
                     if(!isOrgParent(parent, parentOrgList)){
                         ObjectReferenceType ref = new ObjectReferenceType();
                         ref.setOid(parent.getOid());
+                        ref.setType(OrgType.COMPLEX_TYPE);
                         org.asObjectable().getParentOrgRef().add(ref);
                     }
                 }
             }
         }
 
+        //Delete parentOrgUnits from edited OrgUnit
+        if(isEditing()){
+            if(parentOrgUnitsModel != null && parentOrgUnitsModel.getObject() != null){
+                for(ObjectReferenceType parent: parentOrgList){
+                    if(!isRefInParentOrgModel(parent)){
+                        org.asObjectable().getParentOrgRef().remove(parent);
+                    }
+                }
+            }
+        }
+
         return org;
+    }
+
+    private boolean isRefInParentOrgModel(ObjectReferenceType reference){
+        for(OrgType parent: parentOrgUnitsModel.getObject()){
+            if(reference.getOid().equals(parent.getOid())){
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isOrgParent(OrgType unit, List<ObjectReferenceType> parentList){

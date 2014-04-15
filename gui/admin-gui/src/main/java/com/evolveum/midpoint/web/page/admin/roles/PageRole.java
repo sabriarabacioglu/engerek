@@ -15,6 +15,8 @@
  */
 package com.evolveum.midpoint.web.page.admin.roles;
 
+import com.evolveum.midpoint.prism.PrismContext;
+import com.evolveum.midpoint.prism.PrismObject;
 import com.evolveum.midpoint.model.api.ModelService;
 import com.evolveum.midpoint.prism.*;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
@@ -43,6 +45,7 @@ import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.markup.html.form.EnumChoiceRenderer;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
+import org.apache.wicket.model.AbstractReadOnlyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.StringResourceModel;
@@ -108,8 +111,23 @@ public class PageRole extends PageAdminRoles{
                     return createStringResource("PageRoleEditor.title.newRole").getObject();
                 }
 
+                return createStringResource("PageRoleEditor.title.editingRole").getObject();
+            }
+        };
+    }
+
+    @Override
+    protected IModel<String> createPageSubTitleModel(){
+        return new LoadableModel<String>() {
+
+            @Override
+            protected String load() {
+                if(!isEditing()){
+                    return createStringResource("PageRoleEditor.subtitle.newRole").getObject();
+                }
+
                 String roleName = model.getObject().asObjectable().getName().getOrig();
-                return new StringResourceModel("PageRoleEditor.title.editingRole", PageRole.this, null, null, roleName).getString();
+                return createStringResource("PageRoleEditor.subtitle.editingRole", roleName).getString();
             }
         };
     }
@@ -215,6 +233,11 @@ public class PageRole extends PageAdminRoles{
             public List<AssignmentType> getAssignmentTypeList(){
                 return model.getObject().asObjectable().getAssignment();
             }
+
+            @Override
+            public String getExcludeOid(){
+                return model.getObject().asObjectable().getOid();
+            }
         };
         form.add(assignments);
 
@@ -224,6 +247,11 @@ public class PageRole extends PageAdminRoles{
             @Override
             public List<AssignmentType> getAssignmentTypeList(){
                 return model.getObject().asObjectable().getInducement();
+            }
+
+            @Override
+            public String getExcludeOid(){
+                return model.getObject().asObjectable().getOid();
             }
         };
         form.add(inducements);

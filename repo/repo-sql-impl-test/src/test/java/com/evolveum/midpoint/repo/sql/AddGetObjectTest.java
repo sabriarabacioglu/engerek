@@ -21,34 +21,35 @@ import com.evolveum.midpoint.prism.*;
 import com.evolveum.midpoint.prism.delta.ItemDelta;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.delta.ReferenceDelta;
-import com.evolveum.midpoint.prism.dom.PrismDomProcessor;
-import com.evolveum.midpoint.prism.query.LessFilter;
-import com.evolveum.midpoint.prism.query.ObjectQuery;
+import com.evolveum.midpoint.prism.util.PrismTestUtil;
+import com.evolveum.midpoint.prism.util.ValueSerializationUtil;
 import com.evolveum.midpoint.repo.sql.type.XMLGregorianCalendarType;
 import com.evolveum.midpoint.repo.sql.util.RUtil;
-import com.evolveum.midpoint.schema.DeltaConvertor;
-import com.evolveum.midpoint.schema.ResultHandler;
+import com.evolveum.midpoint.schema.*;
 import com.evolveum.midpoint.schema.processor.ResourceSchema;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.schema.util.ShadowUtil;
 import com.evolveum.midpoint.test.util.TestUtil;
+import com.evolveum.midpoint.util.QNameUtil;
 import com.evolveum.midpoint.util.exception.ObjectAlreadyExistsException;
+import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.*;
 import com.evolveum.prism.xml.ns._public.types_2.ObjectDeltaType;
 import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
+import org.hibernate.Query;
+import org.hibernate.Session;
 import org.hibernate.stat.Statistics;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
+import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author lazyman
@@ -65,7 +66,7 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
         stats.setStatisticsEnabled(true);
 
         final File OBJECTS_FILE = new File("./src/test/resources/10k-users.xml");
-        List<PrismObject<? extends Objectable>> elements = prismContext.getPrismDomProcessor().parseObjects(
+        List<PrismObject<? extends Objectable>> elements = prismContext.parseObjects(
                 OBJECTS_FILE);
 
         long previousCycle = 0;
@@ -127,7 +128,7 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
     }
 
     private void addGetCompare(File file) throws Exception {
-        List<PrismObject<? extends Objectable>> elements = prismContext.getPrismDomProcessor().parseObjects(file);
+        List<PrismObject<? extends Objectable>> elements = prismContext.parseObjects(file);
         List<String> oids = new ArrayList<String>();
 
         OperationResult result = new OperationResult("Simple Add Get Test");
@@ -142,16 +143,24 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
                 (System.currentTimeMillis() - time),});
 
         int count = 0;
-        elements = prismContext.getPrismDomProcessor().parseObjects(file);
+        elements = prismContext.parseObjects(file);
         for (int i = 0; i < elements.size(); i++) {
             try {
                 PrismObject object = elements.get(i);
                 object.asObjectable().setOid(oids.get(i));
 
                 Class<? extends ObjectType> clazz = object.getCompileTimeClass();
-                PrismObject<? extends ObjectType> newObject = repositoryService.getObject(clazz, oids.get(i), null, result);
+
+                Collection o = null;
+                if (UserType.class.equals(clazz)) {
+                    o = SelectorOptions.createCollection(UserType.F_JPEG_PHOTO,
+                            GetOperationOptions.createRetrieve(RetrieveOption.INCLUDE));
+                }
+                PrismObject<? extends ObjectType> newObject = repositoryService.getObject(clazz, oids.get(i), o, result);
                 LOGGER.info("Old\n{}\nnew\n{}", new Object[]{object.debugDump(3), newObject.debugDump(3)});
                 checkContainersSize(newObject, object);
+                System.out.println("OLD: " + object.findProperty(ObjectType.F_NAME).getValue());
+                System.out.println("NEW: " + newObject.findProperty(ObjectType.F_NAME).getValue());
 
                 ObjectDelta delta = object.diff(newObject);
                 if (delta == null) {
@@ -170,7 +179,11 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
                     }
                     LOGGER.error(">>> {} Found {} changes for {}\n{}", new Object[]{(i + 1),
                             delta.getModifications().size(), newObject.toString(), delta.debugDump(3)});
-                    LOGGER.error("{}", prismContext.getPrismDomProcessor().serializeObjectToString(newObject));
+                    ItemDelta id = (ItemDelta) delta.getModifications().iterator().next();
+                    if (id.isReplace()) {
+                        System.out.println(id.getValuesToReplace().iterator().next());
+                    }
+                    LOGGER.error("{}", prismContext.serializeObjectToString(newObject, PrismContext.LANG_XML));
                 }
             } catch (Exception ex) {
                 LOGGER.error("Exception occurred", ex);
@@ -249,12 +262,12 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
     public void addUserWithAssignmentExtension() throws Exception {
         LOGGER.info("===[ addUserWithAssignmentExtension ]===");
         File file = new File(FOLDER_BASIC, "user-assignment-extension.xml");
-        List<PrismObject<? extends Objectable>> elements = prismContext.getPrismDomProcessor().parseObjects(file);
+        List<PrismObject<? extends Objectable>> elements = prismContext.parseObjects(file);
 
         OperationResult result = new OperationResult("ADD");
         String oid = repositoryService.addObject((PrismObject) elements.get(0), null, result);
 
-        PrismObject<UserType> fileUser = (PrismObject<UserType>) prismContext.getPrismDomProcessor().parseObjects(file)
+        PrismObject<UserType> fileUser = (PrismObject<UserType>) prismContext.parseObjects(file)
                 .get(0);
         long id = 1;
         for (AssignmentType assignment : fileUser.asObjectable().getAssignment()) {
@@ -343,21 +356,6 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
                 .getGlobalPasswordPolicyRef());
         AssertJUnit.assertNull("default user template not null", repoSystemConfig.asObjectable()
                 .getDefaultUserTemplateRef());
-
-//        AssertJUnit.assertNotNull("org root ref is null.", repoSystemConfig.asObjectable().getOrgRootRef());
-//        AssertJUnit.assertEquals(2, repoSystemConfig.asObjectable().getOrgRootRef().size());
-//        List<ObjectReferenceType> orgRootRefs = repoSystemConfig.asObjectable().getOrgRootRef();
-//        String[] refs = {"10000000-0000-0000-0000-000000000003", "20000000-0000-0000-0000-000000000003"};
-//        for (String ref : refs) {
-//            boolean found = false;
-//            for (ObjectReferenceType orgRootRef : orgRootRefs) {
-//                if (ref.equals(orgRootRef.getOid())) {
-//                    found = true;
-//                    break;
-//                }
-//            }
-//            AssertJUnit.assertTrue(ref  + " was not found in org. root refs in system configuration.",found);
-//        }
     }
 
     @Test
@@ -436,7 +434,7 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
     @Test(enabled = false)
     public void deltaOperationSerializationPerformanceTest() throws Exception {
         List<PrismObject<? extends Objectable>> elements =
-                prismContext.getPrismDomProcessor().parseObjects(new File(FOLDER_BASIC, "objects.xml"));
+                prismContext.parseObjects(new File(FOLDER_BASIC, "objects.xml"));
 
         //get user from objects.xml
         ObjectDelta delta = ObjectDelta.createAddDelta(elements.get(0));
@@ -445,7 +443,7 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
         //first conversion option
         System.out.println(DeltaConvertor.toObjectDeltaTypeXml(delta));
         //second conversion option
-        System.out.println("\n" + RUtil.toRepo(DeltaConvertor.toObjectDeltaType(delta), prismContext));
+        System.out.println("\n" + toRepo(DeltaConvertor.toObjectDeltaType(delta), prismContext));
 
         long time = System.currentTimeMillis();
         for (int i = 0; i < COUNT; i++) {
@@ -457,10 +455,35 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
         time = System.currentTimeMillis();
         for (int i = 0; i < COUNT; i++) {
             ObjectDeltaType type = DeltaConvertor.toObjectDeltaType(delta);
-            String xml = RUtil.toRepo(type, prismContext);
+            String xml = toRepo(type, prismContext);
         }
         time = System.currentTimeMillis() - time;
         System.out.println(">>> " + time);
+    }
+
+    private <T> String toRepo(T value, PrismContext prismContext)
+            throws SchemaException, JAXBException {
+        if (value == null) {
+            return null;
+        }
+
+        // PrismDomProcessor domProcessor = prismContext.getPrismDomProcessor();
+        if (value instanceof Objectable) {
+            return prismContext.serializeObjectToString(((Objectable) value).asPrismObject(),
+                    PrismContext.LANG_XML);
+        }
+
+        if (value instanceof Containerable) {
+            // TODO: createFakeParentElement??? why we don't use the real
+            // name???
+            return prismContext.serializeContainerValueToString(
+                    ((Containerable) value).asPrismContainerValue(),
+                    QNameUtil.getNodeQName(RUtil.createFakeParentElement()), prismContext.LANG_XML);
+        }
+
+
+        return ValueSerializationUtil.serializeValue(value, new QName("fake"), prismContext, PrismContext.LANG_XML);
+
     }
 
     @Test
@@ -479,49 +502,69 @@ public class AddGetObjectTest extends BaseSQLRepoTest {
         repositoryService.searchObjectsIterative(ObjectType.class, null, handler, null, result);
         AssertJUnit.assertTrue(!objects.isEmpty());
     }
-    
+
     @Test
     private void addGetFullAccountShadow() throws Exception {
         LOGGER.info("===[ simpleAddAccountShadowTest ]===");
         OperationResult result = new OperationResult("testAddAccountShadow");
-        File file = new File(FOLDER_BASIC, "account-accountTypeShadow.xml"); 
-        try 
-        {
-        	PrismObject<AccountShadowType> account = prismContext.getPrismDomProcessor().parseObject(file);
-        	
-        	 // apply appropriate schema
+        File file = new File(FOLDER_BASIC, "account-accountTypeShadow.xml");
+        try {
+            PrismObject<AccountShadowType> account = prismContext.parseObject(file);
+
+            // apply appropriate schema
             PrismObject<ResourceType> resource = prismContext.parseObject(new File(FOLDER_BASIC, "resource-opendj.xml"));
             ResourceSchema resourceSchema = RefinedResourceSchema.getResourceSchema(resource, prismContext);
             ShadowUtil.applyResourceSchema(account, resourceSchema);
-            
-        	repositoryService.addObject(account, null, result);
-        
-        	PrismObject<ShadowType> afterAdd = repositoryService.getObject(ShadowType.class, account.getOid(), null, result);
-        	AssertJUnit.assertNotNull(afterAdd);
-        	        
-        }
-        catch (Exception ex) 
-        {
-        	LOGGER.error("Exception occurred", ex);
+
+            repositoryService.addObject(account, null, result);
+
+            PrismObject<ShadowType> afterAdd = repositoryService.getObject(ShadowType.class, account.getOid(), null, result);
+            AssertJUnit.assertNotNull(afterAdd);
+
+        } catch (Exception ex) {
+            LOGGER.error("Exception occurred", ex);
             throw ex;
         }
     }
 
-    /**
-     * Just a test with dom and jaxb processor and namespaces polution.
-     * JAXB processor is much better.
-     *
-     * @throws Exception
-     */
     @Test
-    public void domVsJaxbProcessor() throws Exception {
-        PrismDomProcessor domProcessor =prismContext.getPrismDomProcessor();
-        List<PrismObject<? extends Objectable>> elements = domProcessor.parseObjects(new File(FOLDER_BASIC, "objects.xml"));
+    public void test100AddUserWithoutAssignmentIds() throws Exception {
+        OperationResult result = new OperationResult("test100AddUserWithoutAssignmentIds");
+        PrismObject<UserType> user = PrismTestUtil.parseObject(new File(FOLDER_BASIC, "user-big.xml"));
 
-        PrismObject obj = elements.get(0);
-        System.out.println(domProcessor.serializeObjectToString(obj));
+        //remove ids from assignment values
+        PrismContainer container = user.findContainer(UserType.F_ASSIGNMENT);
+        for (PrismContainerValue value : (List<PrismContainerValue>) container.getValues()) {
+            value.setId(null);
+        }
+        final String OID = repositoryService.addObject(user, null, result);
+        result.computeStatusIfUnknown();
 
-        System.out.println(prismContext.getPrismJaxbProcessor().marshalToString(obj.asObjectable()));
+        //get user
+        user = repositoryService.getObject(UserType.class, OID, null, result);
+        result.computeStatusIfUnknown();
+
+        container = user.findContainer(UserType.F_ASSIGNMENT);
+        List<Short> xmlShorts = new ArrayList<>();
+        for (PrismContainerValue value : (List<PrismContainerValue>) container.getValues()) {
+            AssertJUnit.assertNotNull(value.getId());
+            xmlShorts.add(value.getId().shortValue());
+        }
+        Collections.sort(xmlShorts);
+
+        Session session = open();
+        try {
+            Query query = session.createSQLQuery("select id from m_assignment where owner_oid=:oid");
+            query.setString("oid", OID);
+            List<Short> dbShorts = query.list();
+            Collections.sort(dbShorts);
+
+            LOGGER.info("assigments ids: expected {} db {}", Arrays.toString(xmlShorts.toArray()),
+                    Arrays.toString(dbShorts.toArray()));
+            AssertJUnit.assertArrayEquals(xmlShorts.toArray(), dbShorts.toArray());
+        } finally {
+            close(session);
+        }
     }
 }
 

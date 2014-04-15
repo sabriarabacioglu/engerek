@@ -3,6 +3,8 @@ package com.evolveum.midpoint.web.page.forgetpassword;
 
 import com.evolveum.midpoint.model.api.ModelService;
 import com.evolveum.midpoint.model.api.PolicyViolationException;
+import com.evolveum.midpoint.prism.PrismContainer;
+import com.evolveum.midpoint.prism.PrismContainerValue;
 import com.evolveum.midpoint.prism.PrismObject;
 import com.evolveum.midpoint.prism.PrismObjectDefinition;
 import com.evolveum.midpoint.prism.PrismProperty;
@@ -24,6 +26,7 @@ import com.evolveum.midpoint.web.component.util.LoadableModel;
 import com.evolveum.midpoint.web.page.PageBase;
 import com.evolveum.midpoint.web.page.admin.home.PageDashboard;
 import com.evolveum.midpoint.web.page.admin.home.PageMyPasswords;
+import com.evolveum.midpoint.web.page.admin.home.dto.AssignmentItemDto;
 import com.evolveum.midpoint.web.page.admin.home.dto.MyPasswordsDto;
 import com.evolveum.midpoint.web.page.admin.home.dto.PasswordAccountDto;
 import com.evolveum.midpoint.web.page.forgetpassword.dto.ForgetPasswordDto;
@@ -50,6 +53,8 @@ import com.evolveum.midpoint.xml.ns._public.common.common_2a.CredentialsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ProtectedStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionAnswerType;
+import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionsCredentialsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
 import com.sun.tools.xjc.reader.xmlschema.bindinfo.BIConversion.User;
@@ -88,8 +93,13 @@ public class PageForgetPassword extends PageBase {
     private static final String OPERATION_RESET_PASSWORD = DOT_CLASS + "resetPassword";
     private static final String OPERATION_LOAD_USER_WITH_ACCOUNTS = DOT_CLASS + "loadUserWithAccounts";
     
+    
    
     public PageForgetPassword() {
+    	
+    	
+
+   
         TopMenuBar menuBar = getTopMenuBar();
         menuBar.addOrReplace(new LocalePanel(TopMenuBar.ID_RIGHT_PANEL));
         
@@ -99,13 +109,14 @@ public class PageForgetPassword extends PageBase {
             protected void onSubmit() {
             	 final RequiredTextField<String> username = (RequiredTextField) get(ID_USERNAME);
                  RequiredTextField<String> email = (RequiredTextField) get(ID_EMAIL);
-                 RequiredTextField<String> nickname = (RequiredTextField) get(ID_NICKNAME);
-              LOGGER.info("Reset Password Submitted.");
+               
+              LOGGER.info("Reset Password user info form submitted.");
           
                 //Check if the email and the uid exists and matches in the idm
                 
-            	UserType user= checkUser(email.getModelObject(),username.getModelObject(),nickname.getModelObject() );
-                if(user!=null){
+            	UserType user= checkUser(email.getModelObject(),username.getModelObject() );
+                
+            	if(user!=null){
                 	//If the parameters are ok reset the password
                     System.out.println("Reset Password User var.");
                 	resetPassword(user);
@@ -121,7 +132,7 @@ public class PageForgetPassword extends PageBase {
 
         form.add(new RequiredTextField(ID_USERNAME, new Model<String>()));
         form.add(new RequiredTextField(ID_EMAIL, new Model<String>()));
-        form.add(new RequiredTextField(ID_EMAIL, new Model<String>()));
+       
         add(form);
     }
     
@@ -209,7 +220,7 @@ public class PageForgetPassword extends PageBase {
     
     
     //Checkd if the user exists with the given email and username in the idm 
-    public UserType checkUser(String email,String username,String nickname){
+    public UserType checkUser(String email,String username){
     	OperationResult result = new OperationResult(LOAD_USER_EMAIL);	
     	String idmEmail=null;
     	Collection<SelectorOptions<GetOperationOptions>> options = new ArrayList<SelectorOptions<GetOperationOptions>>();
@@ -225,9 +236,12 @@ public class PageForgetPassword extends PageBase {
 
         ModelService model = getModelService();
 		try {
+		
+	      filter = EqualsFilter.createEqual(UserType.F_NAME, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,YOUR_NAME);
+	               
+	        ObjectQuery query = ObjectQuery.createObjectQuery(filter);
 			
-			filter = EqualsFilter.createEqual(UserType.F_NAME,UserType.class, getPrismContext(),PolyStringOrigMatchingRule.NAME.getLocalPart());
-			  ObjectQuery query = ObjectQuery.createObjectQuery(filter);
+			 
 			  List<PrismObject<UserType>> userList= model.searchObjects(UserType.class, query, options, task, subResult);
 		        
 		        LOGGER.info("CheckUser try ici");
@@ -237,7 +251,7 @@ public class PageForgetPassword extends PageBase {
 			        LOGGER.info("User bulundu");
 				  UserType user=  userList.get(0).asObjectable();
 				  System.out.println("Emaillllllll:::::: "+user.getEmailAddress());
-				  if(user.getEmailAddress().equalsIgnoreCase(email) && user.getNickName().equals(nickname)){
+				  if(user.getEmailAddress().equalsIgnoreCase(email)){
 		
 				  return user;
 				  }
@@ -278,4 +292,6 @@ public class PageForgetPassword extends PageBase {
 
     	
     }
+    
+   
 }

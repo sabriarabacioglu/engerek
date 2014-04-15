@@ -40,6 +40,7 @@ import com.evolveum.midpoint.prism.Visitor;
 import com.evolveum.midpoint.prism.path.IdItemPathSegment;
 import com.evolveum.midpoint.prism.path.ItemPath;
 import com.evolveum.midpoint.prism.path.ItemPath.CompareResult;
+import com.evolveum.midpoint.prism.path.ItemPathSegment;
 import com.evolveum.midpoint.prism.path.NameItemPathSegment;
 import com.evolveum.midpoint.util.DebugDumpable;
 import com.evolveum.midpoint.util.DebugUtil;
@@ -95,7 +96,11 @@ public abstract class ItemDelta<V extends PrismValue> implements Itemable, Debug
 		if (path.isEmpty()) {
 			this.elementName = null;
 		} else {
-			this.elementName = ((NameItemPathSegment)path.last()).getName();
+			ItemPathSegment last = path.last();
+			if (!(last instanceof NameItemPathSegment)) {
+				throw new IllegalArgumentException("Invalid delta path "+path+". Delta path must always point to item, not to value");
+			}
+			this.elementName = ((NameItemPathSegment)last).getName();
 			this.parentPath = path.allExceptLast();
 		}
 		this.definition = itemDefinition;
@@ -1154,6 +1159,9 @@ public abstract class ItemDelta<V extends PrismValue> implements Itemable, Debug
 		for(V val: values) {
 			if (val instanceof PrismContainerValue<?>) {
 				PrismContainerValue<?> cval = (PrismContainerValue<?>)val;
+				if (cval.getItems() == null){
+					continue;
+				}
 				for (Item<?> item: cval.getItems()) {
 					item.assertDefinitions(tolarateRawValues, cval.toString()+" in "+sourceDescription);
 				}
@@ -1329,23 +1337,24 @@ public abstract class ItemDelta<V extends PrismValue> implements Itemable, Debug
 	}
 
 	protected void dumpValues(StringBuilder sb, String label, Collection<V> values, int indent) {
-		for (int i = 0; i < indent; i++) {
-			sb.append(INDENT_STRING);
-		}
+		DebugUtil.indentDebugDump(sb, indent);
 		sb.append(label).append(": ");
 		if (values == null) {
 			sb.append("(null)");
 		} else {
-			Iterator<V> i = values.iterator();
-			while (i.hasNext()) {
-				V value = i.next();
-				if (DebugUtil.isDetailedDebugDump()) {
-					sb.append(value.toString());
-				} else {
-					sb.append(value.toHumanReadableString());
+			if (DebugUtil.isDetailedDebugDump()) {
+				for (V value: values) {
+					sb.append("\n");
+					sb.append(value.debugDump(indent + 1));
 				}
-				if (i.hasNext()) {
-					sb.append(", ");
+			} else {
+				Iterator<V> i = values.iterator();
+				while (i.hasNext()) {
+					V value = i.next();
+					sb.append(value.toHumanReadableString());
+					if (i.hasNext()) {
+						sb.append(", ");
+					}
 				}
 			}
 		}

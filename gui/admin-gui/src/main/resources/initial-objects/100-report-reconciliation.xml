@@ -22,7 +22,7 @@
         version="0">
 	<name>
 		<orig xmlns="http://prism.evolveum.com/xml/ns/public/types-2">Reconciliation report</orig>
-		<norm xmlns="http://prism.evolveum.com/xml/ns/public/types-2">Reconciliation report</norm>
+		<norm xmlns="http://prism.evolveum.com/xml/ns/public/types-2">reconciliation report</norm>
 	</name>
 	<description>Reconciliation report for selected resource.</description>
 	<!-- flag if this report is "parent" report, used for gui -->
@@ -238,18 +238,20 @@
 		</jasperReport>
 	</template>
 	<templateStyle>
-		<style fontName="DejaVu Sans" fontSize="10" hAlign="Left" isDefault="true" isPdfEmbedded="true" 
+		<jasperTemplate xmlns="http://jasperreports.sourceforge.net/dtds/jaspertemplate.dtd">
+			<style fontName="DejaVu Sans" fontSize="10" hAlign="Left" isDefault="true" isPdfEmbedded="true" 
 				   name="Base" pdfEncoding="Identity-H" pdfFontName="DejaVuSans.ttf" vAlign="Middle">
-		</style>
-		<style backcolor="#267994" fontSize="26" forecolor="#FFFFFF" isDefault="false"
+			</style>
+			<style backcolor="#267994" fontSize="26" forecolor="#FFFFFF" isDefault="false"
                    mode="Opaque" name="Title" style="Base"/> 
-		<style fontSize="12" forecolor="#000000" isDefault="false" name="Page header"
+			<style fontSize="12" forecolor="#000000" isDefault="false" name="Page header"
                    style="Base"/>
-		<style backcolor="#333333" fontSize="12" forecolor="#FFFFFF" hAlign="Center"
+			<style backcolor="#333333" fontSize="12" forecolor="#FFFFFF" hAlign="Center"
                    isDefault="false" mode="Opaque" name="Column header" style="Base"/>
-		<style isBold="false" isDefault="false" name="Detail" style="Base"/>
-		<style fontSize="9" forecolor="#000000" isDefault="false" name="Page footer"
+			<style isBold="false" isDefault="false" name="Detail" style="Base"/>
+			<style fontSize="9" forecolor="#000000" isDefault="false" name="Page footer"
                    style="Base"/>
+		</jasperTemplate>
 	</templateStyle>
 	<orientation>landscape</orientation>
 	<export>pdf</export>
@@ -295,7 +297,7 @@
 			s.synchronizationSituation as situation, 
 			s.synchronizationTimestamp as situationTimestamp 
 			from RShadow as s join s.resourceRef as resRef 
-			where s.objectClass = $P{objectClass} and resRef.type = 8 and resRef.targetOid = $P{resourceOid} and s.kind = 0 
+			where resRef.type = 8 and resRef.targetOid = $P{resourceOid} and s.kind = 0 
 			order by s.synchronizationSituation, s.name.orig
 		</r:hqlQuery>
 		<r:objectClass>ri:AccountObjectClass</r:objectClass>

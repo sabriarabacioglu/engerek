@@ -359,7 +359,7 @@ public class Construction<F extends FocusType> implements DebugDumpable, Seriali
 	}
 
 	private void mergeExtension(PrismContainer<Containerable> magicExtension, PrismContainer<Containerable> segmentExtension) throws SchemaException {
-		if (segmentExtension != null) {
+		if (segmentExtension != null && !segmentExtension.getValue().isEmpty()) {
 			for (Item<?> segmentItem: segmentExtension.getValue().getItems()) {
 				Item<?> magicItem = magicExtension.findItem(segmentItem.getElementName());
 				if (magicItem == null) {
@@ -601,16 +601,12 @@ public class Construction<F extends FocusType> implements DebugDumpable, Seriali
 	@Override
 	public String debugDump(int indent) {
 		StringBuilder sb = new StringBuilder();
-		for (int i=0;i<indent;i++) {
-			sb.append(INDENT_STRING);
-		}
-		sb.append("Construction(");
+		DebugUtil.debugDumpLabel(sb, "Construction", indent);
 		if (refinedObjectClassDefinition == null) {
 			sb.append("null");
 		} else {
 			sb.append(refinedObjectClassDefinition.getShadowDiscriminator());
 		}
-		sb.append(")");
 		if (attributeMappings != null && !attributeMappings.isEmpty()) {
 			sb.append("\n");
 			DebugUtil.debugDumpLabel(sb, "attribute mappings", indent+1);
@@ -627,6 +623,8 @@ public class Construction<F extends FocusType> implements DebugDumpable, Seriali
 				sb.append(mapping.debugDump(indent+2));
 			}
 		}
+		sb.append("\n");
+		DebugUtil.debugDumpWithLabel(sb, "assignmentPath", assignmentPath, indent + 1);
 		return sb.toString();
 	}
 

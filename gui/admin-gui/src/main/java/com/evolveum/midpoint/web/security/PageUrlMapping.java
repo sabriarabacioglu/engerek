@@ -33,7 +33,7 @@ public enum PageUrlMapping {
     TASK_DETAILS("/admin/task/**", new String[]{AUTZ_UI_TASK_DETAIL_URL, AUTZ_UI_TASKS_ALL_URL}),
     ROLE_DETAILS("/admin/role/**", new String[]{AUTZ_UI_ROLE_DETAILS_URL, AUTZ_UI_ROLES_ALL_URL}),
     
-    FORGETPASSWORD("/forgetpassword",new String[]{AUTZ_UI_PERMIT_ALL_URL}),
+    FORGETPASSWORD("/forgetpassword",new String[]{AUTZ_UI_PERMIT_ALL_URL,AUTZ_UI_PERMIT_ALL_URL}),
     RESOURCE_DETAILS("/admin/resource/**", new String[]{AUTZ_UI_RESOURCE_DETAILS_URL, AUTZ_UI_RESOURCES_ALL_URL});
 
    

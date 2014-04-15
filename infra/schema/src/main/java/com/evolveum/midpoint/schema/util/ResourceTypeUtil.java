@@ -22,6 +22,7 @@ import java.util.List;
 import javax.xml.namespace.QName;
 
 
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -58,6 +59,7 @@ import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.CredentialsC
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.DeleteCapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ReadCapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.UpdateCapabilityType;
+import com.evolveum.prism.xml.ns._public.types_2.SchemaDefinitionType;
 
 /**
  * Methods that would belong to the ResourceType class but cannot go there
@@ -122,7 +124,7 @@ public class ResourceTypeUtil {
 	public static void setResourceXsdSchema(PrismObject<ResourceType> resource, Element xsdElement) {
 		try {
 			PrismContainer<XmlSchemaType> schemaContainer = resource.findOrCreateContainer(ResourceType.F_SCHEMA);
-			PrismProperty<Element> definitionProperty = schemaContainer.findOrCreateProperty(XmlSchemaType.F_DEFINITION);
+			PrismProperty<SchemaDefinitionType> definitionProperty = schemaContainer.findOrCreateProperty(XmlSchemaType.F_DEFINITION);
 			ObjectTypeUtil.setXsdSchemaDefinition(definitionProperty, xsdElement);
 		} catch (SchemaException e) {
 			// Should not happen
@@ -372,26 +374,6 @@ public class ResourceTypeUtil {
 			}
         }
 		return null;
-	}
-
-	/**
-	 * Returns appropriate object synchronization settings for the class.
-	 * Assumes single sync setting for now.
-	 */
-	@Deprecated
-	public static ObjectSynchronizationType determineSynchronization(ResourceType resource, Class<UserType> type) {
-		SynchronizationType synchronization = resource.getSynchronization();
-		if (synchronization == null) {
-			return null;
-		}
-		List<ObjectSynchronizationType> objectSynchronizations = synchronization.getObjectSynchronization();
-		if (objectSynchronizations.isEmpty()) {
-			return null;
-		}
-		if (objectSynchronizations.size() == 1) {
-			return objectSynchronizations.get(0);
-		}
-		throw new UnsupportedOperationException("Selecting from multiple synchronization settings is not yet supported");
 	}
 
 	public static PrismContainer<Containerable> getConfigurationContainer(ResourceType resourceType) {
