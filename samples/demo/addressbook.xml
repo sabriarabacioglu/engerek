@@ -47,9 +47,9 @@
 				xmlns:icscdbtable="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/org.forgerock.openicf.connectors.databasetable-connector/org.identityconnectors.databasetable.DatabaseTableConnector">
 			<icscdbtable:port>5432</icscdbtable:port>
 			<icscdbtable:host>localhost</icscdbtable:host>
-			<icscdbtable:user>addressbook</icscdbtable:user>
-			<icscdbtable:password><clearValue>secret</clearValue></icscdbtable:password>
-			<icscdbtable:database>addressbook</icscdbtable:database>
+			<icscdbtable:user>postgres</icscdbtable:user>
+			<icscdbtable:password><clearValue>qwerty123</clearValue></icscdbtable:password>
+			<icscdbtable:database>postgres</icscdbtable:database>
 			<icscdbtable:table>people</icscdbtable:table>
 			<icscdbtable:keyColumn>username</icscdbtable:keyColumn>
 			<icscdbtable:passwordColumn>password</icscdbtable:passwordColumn>

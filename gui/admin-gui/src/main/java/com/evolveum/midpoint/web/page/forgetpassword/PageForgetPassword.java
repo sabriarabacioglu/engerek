@@ -52,11 +52,12 @@ import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.CredentialsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ProtectedStringType;
+// import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;.
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionAnswerType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionsCredentialsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
+import com.evolveum.prism.xml.ns._public.types_2.ProtectedStringType;
 import com.sun.tools.xjc.reader.xmlschema.bindinfo.BIConversion.User;
 
 import org.apache.commons.lang.StringUtils;

@@ -28,7 +28,7 @@
 
     <c:resource oid="8844dcca-775d-11e2-a0ac-001e8c717e5b">
 
-        <c:name>HR Feed</c:name>
+        <c:name>HR Feed CSV</c:name>
 
         <connectorRef type="ConnectorType">
             <filter>
@@ -44,7 +44,7 @@
             <!-- Configuration specific for the CSVfile connector -->
             <icfc:configurationProperties
 			xmlns:icfccsvfile="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/org.forgerock.openicf.connectors.csvfile-connector/org.forgerock.openicf.csvfile.CSVFileConnector">
-                <icfccsvfile:filePath>/var/opt/hr/export.csv</icfccsvfile:filePath>
+                <icfccsvfile:filePath>/home/idm/midpoint/csv/midpoint-flatfile-remote.csv</icfccsvfile:filePath>
                 <icfccsvfile:encoding>utf-8</icfccsvfile:encoding>
                 <icfccsvfile:valueQualifier>"</icfccsvfile:valueQualifier>
                 <icfccsvfile:fieldDelimiter>,</icfccsvfile:fieldDelimiter>

@@ -59,7 +59,7 @@ This resource definition contains also definition to enable synchronization.
 			xmlns:icscdbtable="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/org.forgerock.openicf.connectors.databasetable-connector/org.identityconnectors.databasetable.DatabaseTableConnector">
 				<icscdbtable:port>3306</icscdbtable:port>
 				<icscdbtable:quoting></icscdbtable:quoting>
-				<icscdbtable:host>localhost</icscdbtable:host>
+				<icscdbtable:host>10.0.0.175</icscdbtable:host>
 				<icscdbtable:user>midpoint_tests</icscdbtable:user>
 				<icscdbtable:password><clearValue>secret</clearValue></icscdbtable:password>
 				<icscdbtable:database>midpoint_tests</icscdbtable:database>
