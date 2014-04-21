@@ -23,12 +23,9 @@ import com.evolveum.midpoint.prism.delta.ItemDelta;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.delta.PropertyDelta;
 import com.evolveum.midpoint.prism.delta.ReferenceDelta;
-import com.evolveum.midpoint.prism.dom.PrismDomProcessor;
 import com.evolveum.midpoint.prism.path.ItemPath;
 import com.evolveum.midpoint.prism.polystring.PolyString;
-import com.evolveum.midpoint.prism.query.ObjectPaging;
-import com.evolveum.midpoint.prism.query.ObjectQuery;
-import com.evolveum.midpoint.prism.query.OrgFilter;
+import com.evolveum.midpoint.prism.query.*;
 import com.evolveum.midpoint.repo.api.RepoAddOptions;
 import com.evolveum.midpoint.repo.api.RepositoryService;
 import com.evolveum.midpoint.repo.sql.data.common.*;
@@ -53,7 +50,8 @@ import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.*;
 import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
-
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.hibernate.*;
@@ -65,7 +63,6 @@ import org.hibernate.jdbc.Work;
 import org.springframework.stereotype.Repository;
 
 import javax.xml.namespace.QName;
-
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -530,10 +527,10 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
             }
         }
 
+        updateFullObject(rObject, object);
         RObject merged = (RObject) session.merge(rObject);
         //todo finish orgClosureManager
         //orgClosureManager.updateOrgClosure(modifications, session, originalOid, object.getCompileTimeClass(), operation);
-        updateFullObject(session, rObject, object);
 
         //update org. unit hierarchy based on modifications
         if (modifications == null || modifications.isEmpty()) {
@@ -554,7 +551,7 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         return merged.getOid();
     }
 
-    private <T extends ObjectType> void updateFullObject(Session session, RObject object, PrismObject<T> savedObject)
+    private <T extends ObjectType> void updateFullObject(RObject object, PrismObject<T> savedObject)
             throws DtoTranslationException, SchemaException {
         LOGGER.debug("Updating full object xml column start.");
         savedObject.setVersion(Integer.toString(object.getVersion()));
@@ -563,24 +560,13 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
             savedObject.removeProperty(UserType.F_JPEG_PHOTO);
         }
 
-        //PrismDomProcessor domProcessor = getPrismContext().getPrismDomProcessor();
-		String xml = getPrismContext().serializeObjectToString(savedObject, PrismContext.LANG_XML);
+        String xml = getPrismContext().serializeObjectToString(savedObject, PrismContext.LANG_XML);
         byte[] fullObject = RUtil.getByteArrayFromXml(xml, getConfiguration().isUseZip());
 
         if (LOGGER.isTraceEnabled()) LOGGER.trace("Storing full object\n{}", xml);
 
-        LOGGER.debug("Flushing session.");
-        session.flush();
-        LOGGER.debug("Session flushed.");
+        object.setFullObject(fullObject);
 
-        Query query = session.createSQLQuery("update m_object set fullObject = :fullObject where oid=:oid");
-        query.setParameter("fullObject", fullObject);
-        query.setString("oid", savedObject.getOid());
-
-        int result = query.executeUpdate();
-        if (result != 1) {
-            throw new SystemException("Update of fullObject xml column failed for object " + object.toString() + ".");
-        }
         LOGGER.debug("Updating full object xml column finish.");
     }
 
@@ -605,6 +591,8 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
             }
         }
 
+        updateFullObject(rObject, object);
+
         LOGGER.trace("Saving object (non overwrite).");
         String oid = (String) session.save(rObject);
 
@@ -613,7 +601,7 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         //orgClosureManager.updateOrgClosure(modifications, session, oid, object.getCompileTimeClass(),
         //        OrgClosureManager.Operation.ADD);
 
-        updateFullObject(session, rObject, object);
+
 
         if (objectType instanceof OrgType || !objectType.getParentOrgRef().isEmpty()) {
             long time = System.currentTimeMillis();
@@ -1184,11 +1172,11 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
             RObject rObject = createDataObjectFromJAXB(prismObject, false);
             rObject.setVersion(rObject.getVersion() + 1);
 
+            updateFullObject(rObject, prismObject);
             session.merge(rObject);
 
             //todo finish orgClosureManager
             //orgClosureManager.updateOrgClosure(modifications, session, oid, type, OrgClosureManager.Operation.MODIFY);
-            updateFullObject(session, rObject, prismObject);
 
             recomputeHierarchy(rObject, session, modifications);
 
@@ -1216,7 +1204,6 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
             cleanupSessionAndResult(session, result);
             LOGGER.trace("Session cleaned up.");
         }
-
     }
 
     private <T extends ObjectType> void recomputeHierarchy(
@@ -1813,28 +1800,24 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         Validate.notNull(object, "Object must not be null.");
         Validate.notNull(query, "Query must not be null.");
 
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Matching object\n{} with query\n{}", new Object[]{object, query});
+        if (LOGGER.isTraceEnabled()) LOGGER.trace("Matching object {} with query {}", new Object[]{object, query});
+
+        ObjectFilter rootFilter = query.getFilter();
+        if (RUtil.findOrgFilter(rootFilter) == null) {
+            //if query doesn't contain OrgFilter then we can match through ObjectQuery.match() method
+            return ObjectQuery.match(object, query.getFilter(), getMatchingRuleRegistry());
         }
 
-        boolean applicable = ObjectQuery.match(object, query.getFilter(), getMatchingRuleRegistry());
-        OrgFilter orgFilter = RUtil.findOrgFilter(query);
-        if (orgFilter == null) {
-            return applicable;
-        }
-
-        final String operation = "matching";
         int attempt = 1;
 
         SqlPerformanceMonitor pm = getPerformanceMonitor();
         long opHandle = pm.registerOperationStart("matchObject");
-
         try {
             while (true) {
                 try {
-                    matchObject(object, orgFilter);
+                    return matchObject(object, rootFilter);
                 } catch (RuntimeException ex) {
-                    attempt = logOperationAttempt(object.getOid(), operation, attempt, ex, null);
+                    attempt = logOperationAttempt(object.getOid(), "matching", attempt, ex, null);
                     pm.registerOperationNewTrial(opHandle, attempt);
                 }
             }
@@ -1843,7 +1826,153 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         }
     }
 
-    private <T extends ObjectType> boolean matchObject(PrismObject<T> object, OrgFilter filter) throws SchemaException {
+    private <T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectFilter rootFilter) throws SchemaException {
+        Session session = null;
+        try {
+            session = beginTransaction();
+
+            if (rootFilter instanceof OrgFilter) {
+                return matchObject(object.getOid(), rootFilter, session);
+            }
+
+            if (!(rootFilter instanceof NaryLogicalFilter)) {
+                throw new NotImplementedException("Not yet implemented.");
+            }
+
+            //if there are only org. filters then we have to check DB
+            NaryLogicalFilter logical = (NaryLogicalFilter) rootFilter;
+            List<ObjectFilter> conditions = logical.getCondition();
+            boolean onlyOrgs = true;
+            for (ObjectFilter child : conditions) {
+                if (RUtil.findOrgFilter(child) == null) {
+                    onlyOrgs = false;
+                    break;
+                }
+            }
+
+            if (onlyOrgs) {
+                return matchObject(object.getOid(), rootFilter, session);
+            }
+
+            //if there is org. filter and "property" filter we have to check property filter first (performance)
+            ObjectFilter c1 = conditions.get(0);
+            ObjectFilter c2 = conditions.get(1);
+
+            //we sort filters, first property filter then "org. filter"
+            if (RUtil.findOrgFilter(c1) != null) {
+                ObjectFilter c3 = c1;
+                c1 = c2;
+                c2 = c3;
+            }
+
+            boolean c1Result = ObjectQuery.match(object, c1, getMatchingRuleRegistry());
+
+            if (logical instanceof AndFilter) {
+                return c1Result && matchObject(object.getOid(), c2, session);
+            }
+
+            return c1Result || matchObject(object.getOid(), c2, session);
+        } catch (RuntimeException ex) {
+            handleGeneralException(ex, session, null);
+        } finally {
+            cleanupSessionAndResult(session, null);
+        }
+
+        throw new SystemException("Match object failed somehow, this really should not happen.");
+    }
+
+    private boolean matchObject(String dOid, ObjectFilter filter, Session session) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("select count(*) from ROrgClosure o where ");
+        buildMatchObjectQuery(sb, filter, 0);
+
+        Query query = session.createQuery(sb.toString());
+        insertParamsToMatchObjectQuery(query, dOid, filter, 0);
+
+        Number number = (Number) query.uniqueResult();
+        if (number.longValue() != 0L) {
+            return true;
+        }
+
         return false;
+    }
+
+    private void insertParamsToMatchObjectQuery(Query query, String dOid, ObjectFilter filter, int paramIndex) {
+        if (filter instanceof OrgFilter) {
+            OrgFilter orgFilter = (OrgFilter) filter;
+
+            query.setString("aOid" + paramIndex, orgFilter.getOrgRef().getOid());
+            query.setString("dOid" + paramIndex, dOid);
+            if (orgFilter.getMinDepth() == null && orgFilter.getMaxDepth() == null) {
+                return;
+            }
+
+            if (ObjectUtils.equals(orgFilter.getMinDepth(), orgFilter.getMaxDepth())) {
+                query.setInteger("depth" + paramIndex, orgFilter.getMinDepth());
+            } else {
+                if (orgFilter.getMinDepth() != null) {
+                    query.setInteger("minDepth" + paramIndex, orgFilter.getMinDepth());
+                }
+                if (orgFilter.getMaxDepth() != null) {
+                    query.setInteger("maxDepth" + paramIndex, orgFilter.getMaxDepth());
+                }
+            }
+        }
+
+        if (filter instanceof LogicalFilter) {
+            LogicalFilter logical = (LogicalFilter) filter;
+
+            for (ObjectFilter child : logical.getCondition()) {
+                insertParamsToMatchObjectQuery(query, dOid, child, paramIndex++);
+            }
+        }
+    }
+
+    private void buildMatchObjectQuery(StringBuilder sb, ObjectFilter filter, int paramIndex) {
+        if (filter instanceof OrgFilter) {
+            OrgFilter orgFilter = (OrgFilter) filter;
+
+            sb.append("(o.ancestorOid=:aOid").append(paramIndex);
+            sb.append(" and o.descendantOid=:dOid").append(paramIndex).append(' ');
+            if (orgFilter.getMinDepth() == null && orgFilter.getMaxDepth() == null) {
+                sb.append(')');
+                return;
+            }
+
+            if (ObjectUtils.equals(orgFilter.getMinDepth(), orgFilter.getMaxDepth())) {
+                sb.append("and o.depth = :depth").append(paramIndex).append(' ');
+            } else {
+                if (orgFilter.getMinDepth() != null) {
+                    sb.append("and o.depth > :minDepth").append(paramIndex).append(' ');
+                }
+                if (orgFilter.getMaxDepth() != null) {
+                    sb.append("and o.depth <= :maxDepth").append(paramIndex).append(' ');
+                }
+            }
+            sb.append(')');
+        }
+
+        if (filter instanceof NotFilter) {
+            throw new NotImplementedException("Support not yet implemented.");
+        }
+
+        if (filter instanceof LogicalFilter) {
+            LogicalFilter logical = (LogicalFilter) filter;
+            List<ObjectFilter> conditions = logical.getCondition();
+            sb.append('(');
+            for (int i = 0; i < conditions.size(); i++) {
+                ObjectFilter child = conditions.get(i);
+                buildMatchObjectQuery(sb, child, paramIndex++);
+
+                if (i < conditions.size() - 1) {
+                    if (logical instanceof AndFilter) {
+                        sb.append(" and ");
+                    } else {
+                        sb.append(" or ");
+                    }
+                }
+            }
+            sb.append(')');
+        }
     }
 }

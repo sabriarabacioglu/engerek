@@ -25,6 +25,7 @@ import javax.xml.namespace.QName;
 
 import com.evolveum.midpoint.prism.query.ExpressionWrapper;
 import com.evolveum.prism.xml.ns._public.query_2.SearchFilterType;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
@@ -62,8 +63,12 @@ import com.evolveum.midpoint.prism.xnode.XNode;
 import com.evolveum.midpoint.util.DOMUtil;
 import com.evolveum.midpoint.util.QNameUtil;
 import com.evolveum.midpoint.util.exception.SchemaException;
+import com.evolveum.midpoint.util.logging.Trace;
+import com.evolveum.midpoint.util.logging.TraceManager;
 
 public class QueryConvertor {
+	
+	private static final Trace LOGGER = TraceManager.getTrace(QueryConvertor.class);
 	
 	public static final String NS_QUERY = "http://prism.evolveum.com/xml/ns/public/query-2";
 	public static final QName FILTER_ELEMENT_NAME = new QName(NS_QUERY, "filter");
@@ -254,6 +259,7 @@ public class QueryConvertor {
 	}
 	
 	private static <T,C extends Containerable> EqualsFilter<PrismPropertyDefinition<T>> parseEqualFilter(XNode xnode, PrismContainerDefinition<C> pcd, PrismContext prismContext) throws SchemaException{
+		LOGGER.trace("Start to parse EQUALS filter");
 		MapXNode xmap = toMap(xnode);
 		ItemPath itemPath = getPath(xmap, prismContext);
 		
@@ -274,15 +280,19 @@ public class QueryConvertor {
 		
 		XNode valueXnode = xmap.get(KEY_FILTER_EQUALS_VALUE);
 		
+		
+		
 		ItemDefinition itemDefinition = locateItemDefinition(valueXnode, itemPath, pcd, prismContext);
-
+		if (itemDefinition != null){
+			itemName = itemDefinition.getName();
+		}
+		
 		if (valueXnode != null) {
 			
 			Item item = parseItem(valueXnode, itemName, itemDefinition, prismContext);
 			return EqualsFilter.createEqual(itemPath, (PrismProperty) item, matchingRule);
 			
 		} else {
-
 			Entry<QName,XNode> expressionEntry = xmap.getSingleEntryThatDoesNotMatch(
 					KEY_FILTER_EQUALS_VALUE, KEY_FILTER_EQUALS_MATCHING, KEY_FILTER_EQUALS_PATH);
 			if (expressionEntry != null) {
@@ -464,12 +474,21 @@ public class QueryConvertor {
 	}
 	
 	private static <C extends Containerable> ItemDefinition locateItemDefinition(XNode valueXnode, ItemPath itemPath, PrismContainerDefinition<C> pcd, PrismContext prismContext) throws SchemaException{
-		QName itemName = ItemPath.getName(itemPath.last());     // TODO why using only the last item name? It can be in a container different from 'pcd'
+//		QName itemName = ItemPath.getName(itemPath.last());     // TODO why using only the last item name? It can be in a container different from 'pcd'
 		ItemDefinition itemDefinition = null;
 		if (pcd != null) {
 			itemDefinition = pcd.findItemDefinition(itemPath);
 			if (itemDefinition == null) {
-				itemDefinition = prismContext.getXnodeProcessor().locateItemDefinition(pcd, itemName, valueXnode);
+				ItemPath rest = itemPath.tail();
+				QName first = ItemPath.getName(itemPath.first());
+				itemDefinition = prismContext.getXnodeProcessor().locateItemDefinition(pcd, first, valueXnode);
+				if (rest.isEmpty()){
+					return itemDefinition;
+				} else{
+					if (itemDefinition != null && itemDefinition instanceof PrismContainerDefinition){
+						return locateItemDefinition(valueXnode, rest, (PrismContainerDefinition) itemDefinition, prismContext);
+					}
+				}
 				// do not throw...it will be saved as raw..
 //				if (itemDefinition == null){
 //				throw new SchemaException("No definition for item "+itemPath+" in "+pcd);

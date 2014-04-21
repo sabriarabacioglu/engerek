@@ -124,6 +124,11 @@ public abstract class AbstractSearchExpressionEvaluator<V extends PrismValue>
 			ExpressionEvaluationContext params, String contextDescription, Task task, OperationResult result) 
 					throws ExpressionEvaluationException, ObjectNotFoundException, SchemaException {
 		
+//		if (LOGGER.isTraceEnabled()) {
+//			LOGGER.trace("transformSingleValue in {}\nvariables:\n{}\nvalueDestination: {}\nuseNew: {}",
+//					new Object[]{contextDescription, variables.debugDump(1), valueDestination, useNew});
+//		}
+		
 		QName targetTypeQName = getExpressionEvaluatorType().getTargetType();
 		if (targetTypeQName == null) {
 			targetTypeQName = getDefaultTargetType();
@@ -147,9 +152,19 @@ public abstract class AbstractSearchExpressionEvaluator<V extends PrismValue>
 				throw new SchemaException("No filter in "+shortDebugDump());
 			}
 			query = QueryJaxbConvertor.createObjectQuery(targetTypeClass, filterType, prismContext);
+			if (LOGGER.isTraceEnabled()){
+				LOGGER.trace("XML query converted to: {}", query.debugDump());
+			}
 			query = ExpressionUtil.evaluateQueryExpressions(query, variables, params.getExpressionFactory(), 
 					prismContext, params.getContextDescription(), task, result);
+			if (LOGGER.isTraceEnabled()){
+				LOGGER.trace("Expression in query evalueated to: {}", query.debugDump());
+			}
 			query = extendQuery(query, params);
+			
+			if (LOGGER.isTraceEnabled()){
+				LOGGER.trace("Query after extension: {}", query.debugDump());
+			}
 			
 			resultValues = executeSearch(targetTypeClass, targetTypeQName, query, params, params.getResult());
 		}

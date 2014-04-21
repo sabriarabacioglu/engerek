@@ -16,7 +16,7 @@
 
 package com.evolveum.midpoint.repo.sql;
 
-import static com.evolveum.midpoint.prism.util.PrismTestUtil.getJaxbUtil;
+import static org.testng.AssertJUnit.assertEquals;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -42,12 +42,15 @@ import com.evolveum.midpoint.prism.PrismObject;
 import com.evolveum.midpoint.prism.PrismObjectDefinition;
 import com.evolveum.midpoint.prism.PrismReferenceValue;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
+import com.evolveum.midpoint.prism.query.AndFilter;
 import com.evolveum.midpoint.prism.query.EqualsFilter;
 import com.evolveum.midpoint.prism.query.ObjectFilter;
 import com.evolveum.midpoint.prism.query.ObjectPaging;
 import com.evolveum.midpoint.prism.query.ObjectQuery;
+import com.evolveum.midpoint.prism.query.OrFilter;
 import com.evolveum.midpoint.prism.query.OrderDirection;
 import com.evolveum.midpoint.prism.query.OrgFilter;
+import com.evolveum.midpoint.prism.util.PrismTestUtil;
 import com.evolveum.midpoint.repo.sql.data.common.RObjectReference;
 import com.evolveum.midpoint.repo.sql.data.common.ROrgClosure;
 import com.evolveum.midpoint.repo.sql.data.common.ROrgIncorrect;
@@ -59,6 +62,8 @@ import com.evolveum.midpoint.repo.sql.util.RUtil;
 import com.evolveum.midpoint.schema.DeltaConvertor;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.schema.util.ObjectTypeUtil;
+import com.evolveum.midpoint.util.exception.ObjectNotFoundException;
+import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ObjectModificationType;
@@ -88,6 +93,7 @@ public class OrgStructTest extends BaseSQLRepoTest {
     private static final String ORG_F002_OID = "00000000-8888-6666-0000-100000000002";
     private static final String ORG_F003_OID = "00000000-8888-6666-0000-100000000003";
     private static final String ORG_F004_OID = "00000000-8888-6666-0000-100000000004";
+    private static final String ORG_F005_OID = "00000000-8888-6666-0000-100000000005";
     private static final String ORG_F006_OID = "00000000-8888-6666-0000-100000000006";
     private static final String ORG_F007_OID = "00000000-8888-6666-0000-100000000007";
     private static final String ORG_F008_OID = "00000000-8888-6666-0000-100000000008";
@@ -205,6 +211,9 @@ public class OrgStructTest extends BaseSQLRepoTest {
 //		PrismAsserts.assertEqualsPolyString("Governor", "Governor", elaine.getTitle());
         ELAINE_OID = elaine.getOid();
 
+        // MID-1828
+        testMonkeyMatch();
+
         LOGGER.info("==>after add<==");
         Session session = getFactory().openSession();
         session.beginTransaction();
@@ -251,7 +260,162 @@ public class OrgStructTest extends BaseSQLRepoTest {
         session.close();
     }
 
-    @SuppressWarnings({"unchecked"})
+    /**
+     * Tests for repo.matchObject() method
+     */
+    private void testMonkeyMatch() throws SchemaException, ObjectNotFoundException {
+    	OperationResult result = new OperationResult(OrgStructTest.class.getName()+".testMonkeyMatch");
+    	PrismObject<OrgType> org003 = repositoryService.getObject(OrgType.class, ORG_F003_OID, null, result);
+    	PrismObject<OrgType> org001 = repositoryService.getObject(OrgType.class, ORG_F001_OID, null, result);
+    	PrismObject<OrgType> org005 = repositoryService.getObject(OrgType.class, ORG_F005_OID, null, result);
+    	
+    	// properties
+		assertMatch(org003, createOrgNameFilter("F0003"), true);
+		assertMatch(org003, createOrgNameFilter("NoNSenSe"), false);
+		
+		// AND between properties
+		assertMatch(org003, 
+				AndFilter.createAnd(
+						createOrgNameFilter("F0003"),
+						createOrgDisplayNameFilter("Ministry of Offense")),
+				true);
+		
+		assertMatch(org003, 
+				AndFilter.createAnd(
+						createOrgNameFilter("007"),
+						createOrgDisplayNameFilter("Ministry of Offense")),
+				false);
+		
+		assertMatch(org003, 
+				AndFilter.createAnd(
+						createOrgNameFilter("F0003"),
+						createOrgDisplayNameFilter("Departmemt of NONsenSE")),
+				false);
+		
+		// Orgs
+		assertMatch(org003, OrgFilter.createOrg(ORG_F001_OID), true);
+		assertMatch(org003, OrgFilter.createOrg(ORG_F003_OID), true);
+		assertMatch(org003, OrgFilter.createOrg(ORG_F005_OID), false);
+		assertMatch(org003, OrgFilter.createOrg(ORG_F002_OID), false);
+		
+		assertMatch(org001, OrgFilter.createOrg(ORG_F001_OID), true);
+		assertMatch(org003, OrgFilter.createOrg(ORG_F001_OID), true);
+		assertMatch(org005, OrgFilter.createOrg(ORG_F001_OID), true);
+		
+		// OR betweens orgs
+		assertMatch(org005, 
+				OrFilter.createOr(
+						OrgFilter.createOrg(ORG_F002_OID),
+						OrgFilter.createOrg(ORG_F003_OID)),
+				true);
+		assertMatch(org005, 
+				OrFilter.createOr(
+						OrgFilter.createOrg(ORG_F002_OID),
+						OrgFilter.createOrg(ORG_F004_OID)),
+				false);
+
+		// org AND property 
+		assertMatch(org003, 
+				AndFilter.createAnd(
+						OrgFilter.createOrg(ORG_F001_OID),
+						createOrgNameFilter("F0003")),
+				true);
+
+		assertMatch(org003, 
+				AndFilter.createAnd(
+						OrgFilter.createOrg(ORG_F001_OID),
+						createOrgNameFilter("blabla")),
+				false);
+
+		assertMatch(org003, 
+				AndFilter.createAnd(
+						OrgFilter.createOrg(ORG_F005_OID),
+						createOrgNameFilter("F0003")),
+				false);
+		
+		// (OR between orgs) AND property
+		assertMatch(org005,
+				AndFilter.createAnd(
+					OrFilter.createOr(
+							OrgFilter.createOrg(ORG_F002_OID),
+							OrgFilter.createOrg(ORG_F003_OID)),
+					createOrgNameFilter("F0005")),
+				true);
+
+		assertMatch(org005,
+				AndFilter.createAnd(
+					OrFilter.createOr(
+							OrgFilter.createOrg(ORG_F002_OID),
+							OrgFilter.createOrg(ORG_F003_OID)),
+					createOrgNameFilter("blurbrrfrr!")),
+				false);
+		
+		assertMatch(org005,
+				AndFilter.createAnd(
+					OrFilter.createOr(
+							OrgFilter.createOrg(ORG_F002_OID),
+							OrgFilter.createOrg(ORG_F004_OID)),
+					createOrgNameFilter("F0005")),
+				false);
+		
+		// (OR between orgs) AND (AND between properties)
+		assertMatch(org005,
+				AndFilter.createAnd(
+					OrFilter.createOr(
+							OrgFilter.createOrg(ORG_F002_OID),
+							OrgFilter.createOrg(ORG_F003_OID)),
+					AndFilter.createAnd(
+							createOrgNameFilter("F0005"),
+							createOrgDisplayNameFilter("Swashbuckler Section"))),
+				true);
+		
+		assertMatch(org005,
+				AndFilter.createAnd(
+					OrFilter.createOr(
+							OrgFilter.createOrg(ORG_F002_OID),
+							OrgFilter.createOrg(ORG_F004_OID)),
+					AndFilter.createAnd(
+							createOrgNameFilter("F0005"),
+							createOrgDisplayNameFilter("Swashbuckler Section"))),
+				false);
+		
+		assertMatch(org005,
+				AndFilter.createAnd(
+					OrFilter.createOr(
+							OrgFilter.createOrg(ORG_F002_OID),
+							OrgFilter.createOrg(ORG_F003_OID)),
+					AndFilter.createAnd(
+							createOrgNameFilter("007"),
+							createOrgDisplayNameFilter("Swashbuckler Section"))),
+				false);
+		
+		assertMatch(org005,
+				AndFilter.createAnd(
+					OrFilter.createOr(
+							OrgFilter.createOrg(ORG_F002_OID),
+							OrgFilter.createOrg(ORG_F003_OID)),
+					AndFilter.createAnd(
+							createOrgNameFilter("F0005"),
+							createOrgDisplayNameFilter("landLUBER subSECtion"))),
+				false);
+}
+    
+    private ObjectFilter createOrgNameFilter(String name) throws SchemaException {
+		return EqualsFilter.createEqual(OrgType.F_NAME, OrgType.class, prismContext, PrismTestUtil.createPolyString(name));
+	}
+    
+    private ObjectFilter createOrgDisplayNameFilter(String name) throws SchemaException {
+		return EqualsFilter.createEqual(OrgType.F_DISPLAY_NAME, OrgType.class, prismContext, PrismTestUtil.createPolyString(name));
+	}
+
+	private <O extends ObjectType> void assertMatch(PrismObject<O> obj, ObjectFilter filter, boolean expected) throws SchemaException {
+    	ObjectQuery query = new ObjectQuery();
+		query.setFilter(filter);
+		boolean actual = repositoryService.matchObject(obj, query);
+		assertEquals("Wrong match for "+obj+" and "+filter, expected, actual);
+    }
+
+	@SuppressWarnings({"unchecked"})
     @Test
     public void test001addOrgStructObjectsIncorrect() throws Exception {
 
@@ -342,8 +506,8 @@ public class OrgStructTest extends BaseSQLRepoTest {
         OperationResult opResult = new OperationResult("===[ modifyOrgStruct ]===");
         // test modification of org ref in another org type..
 
-        ObjectModificationType modification = getJaxbUtil().unmarshalObject(new File(MODIFY_ORG_ADD_REF_FILENAME),
-                ObjectModificationType.class);
+        ObjectModificationType modification = PrismTestUtil.parseAtomicValue(new File(MODIFY_ORG_ADD_REF_FILENAME),
+                ObjectModificationType.COMPLEX_TYPE);
         ObjectDelta<OrgType> delta = DeltaConvertor.createObjectDelta(modification, OrgType.class, prismContext);
 
         Session session = getFactory().openSession();
@@ -435,8 +599,8 @@ public class OrgStructTest extends BaseSQLRepoTest {
         OperationResult opResult = new OperationResult("===[ modifyOrgStructIncorrect ]===");
         // test modification of org ref in another org type..
 
-        ObjectModificationType modification = getJaxbUtil().unmarshalObject(new File(MODIFY_ORG_INCORRECT_ADD_REF_FILENAME),
-                ObjectModificationType.class);
+        ObjectModificationType modification = PrismTestUtil.parseAtomicValue(new File(MODIFY_ORG_INCORRECT_ADD_REF_FILENAME),
+                ObjectModificationType.COMPLEX_TYPE);
         ObjectDelta<OrgType> delta = DeltaConvertor.createObjectDelta(modification, OrgType.class, prismContext);
 
         repositoryService.modifyObject(OrgType.class, MODIFY_ORG_INCORRECT_ADD_REF_OID, delta.getModifications(), opResult);
@@ -514,8 +678,8 @@ public class OrgStructTest extends BaseSQLRepoTest {
         LOGGER.info("===[ modify delete org ref ]===");
         OperationResult opResult = new OperationResult("===[ modify delete org ref ]===");
         
-        ObjectModificationType modification = getJaxbUtil().unmarshalObject(new File(MODIFY_ORG_DELETE_REF_FILENAME),
-                ObjectModificationType.class);
+        ObjectModificationType modification = PrismTestUtil.parseAtomicValue(new File(MODIFY_ORG_DELETE_REF_FILENAME),
+                ObjectModificationType.COMPLEX_TYPE);
 
         ObjectDelta<OrgType> delta = DeltaConvertor.createObjectDelta(modification, OrgType.class, prismContext);
 
@@ -564,8 +728,8 @@ public class OrgStructTest extends BaseSQLRepoTest {
         // test modification of org ref - delete org ref
         LOGGER.info("===[ modify delete org ref ]===");
         OperationResult opResult = new OperationResult("===[ modify delete org ref ]===");
-        ObjectModificationType modification = getJaxbUtil().unmarshalObject(new File(MODIFY_ORG_INCORRECT_DELETE_REF_FILENAME),
-                ObjectModificationType.class);
+        ObjectModificationType modification = PrismTestUtil.parseAtomicValue(new File(MODIFY_ORG_INCORRECT_DELETE_REF_FILENAME),
+                ObjectModificationType.COMPLEX_TYPE);
 
         ObjectDelta<OrgType> delta = DeltaConvertor.createObjectDelta(modification, OrgType.class, prismContext);
 
@@ -628,8 +792,8 @@ public class OrgStructTest extends BaseSQLRepoTest {
         OperationResult opResult = new OperationResult("===[ modify add user to orgStruct ]===");
 
         //test modification of org ref in another org type..
-        ObjectModificationType modification = getJaxbUtil().unmarshalObject(new File(MODIFY_ORG_ADD_USER_FILENAME),
-                ObjectModificationType.class);
+        ObjectModificationType modification = PrismTestUtil.parseAtomicValue(new File(MODIFY_ORG_ADD_USER_FILENAME),
+                ObjectModificationType.COMPLEX_TYPE);
 
         ObjectDelta<UserType> delta = DeltaConvertor.createObjectDelta(modification, UserType.class, prismContext);
 

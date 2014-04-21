@@ -15,6 +15,7 @@
  */
 package com.evolveum.midpoint.prism;
 
+import com.evolveum.midpoint.prism.crypto.Protector;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.parser.DomParser;
 import com.evolveum.midpoint.prism.parser.JaxbDomHack;
@@ -36,11 +37,14 @@ import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.prism.xml.ns._public.types_2.RawType;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
 import javax.xml.namespace.QName;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,6 +76,8 @@ public class PrismContext {
 	private SchemaDefinitionFactory definitionFactory;
 	private PolyStringNormalizer defaultPolyStringNormalizer;
 	private Map<String, Parser> parserMap;
+	@Autowired
+	private Protector defaultProtector;
 	
 	// We need to keep this because of deprecated methods and various hacks
 	private DomParser parserDom;
@@ -184,6 +190,15 @@ public class PrismContext {
 		}
 		return parser;
 	}
+	
+	public Protector getDefaultProtector() {
+		return defaultProtector;
+	}
+	
+	public void setDefaultProtector(Protector defaultProtector) {
+		this.defaultProtector = defaultProtector;
+	}
+	
     //endregion
 
     //region Parsing Prism objects
@@ -299,6 +314,21 @@ public class PrismContext {
         return xnodeProcessor.parseAtomicValue(xnode, typeName);
     }
 
+    public <T> T parseAtomicValue(String dataString, QName typeName) throws SchemaException {
+        XNode xnode = parseToXNode(dataString);
+        return xnodeProcessor.parseAtomicValue(xnode, typeName);
+    }
+
+    public <T> T parseAtomicValue(File file, QName typeName, String language) throws SchemaException, IOException {
+        XNode xnode = parseToXNode(file, language);
+        return xnodeProcessor.parseAtomicValue(xnode, typeName);
+    }
+
+    public <T> T parseAtomicValue(File file, QName typeName) throws SchemaException, IOException {
+        XNode xnode = parseToXNode(file);
+        return xnodeProcessor.parseAtomicValue(xnode, typeName);
+    }
+
     //endregion
 
     //region Parsing anything (without knowing the definition up-front)
@@ -317,9 +347,19 @@ public class PrismContext {
     //endregion
 
     //region Parsing to XNode
+    private XNode parseToXNode(String dataString) throws SchemaException {
+        Parser parser = findParser(dataString);
+        return parser.parse(dataString);
+    }
+
     private XNode parseToXNode(String dataString, String language) throws SchemaException {
         Parser parser = getParserNotNull(language);
         return parser.parse(dataString);
+    }
+
+    private XNode parseToXNode(File file) throws SchemaException, IOException {
+        Parser parser = findParser(file);
+        return parser.parse(file);
     }
 
     private XNode parseToXNode(File file, String language) throws SchemaException, IOException {
@@ -416,11 +456,44 @@ public class PrismContext {
 		return parser.serializeToString(xroot);
 	}
 
+    /**
+     * Serializes an atomic value - i.e. something that fits into a prism property (if such a property would exist).
+     *
+     * @param value Value to be serialized.
+     * @param elementName Element name to be used.
+     * @param language
+     * @return
+     * @throws SchemaException
+     *
+     * BEWARE, currently works only for values that can be processed via PrismBeanConvertor - i.e. not for special
+     * cases like PolyStringType, ProtectedStringType, etc.
+     */
+    public String serializeAtomicValue(Object value, QName elementName, String language) throws SchemaException {
+        Parser parser = getParserNotNull(language);
+        RootXNode xnode = xnodeProcessor.serializeAtomicValue(value, elementName);
+        return parser.serializeToString(xnode);
+    }
+
+    /**
+     * Serializes any data - i.e. either Item or an atomic value.
+     * Does not support PrismValues: TODO: implement that!
+     *
+     * @param object
+     * @param language
+     * @return
+     * @throws SchemaException
+     */
+
     public String serializeAnyData(Object object, String language) throws SchemaException {
         Parser parser = getParserNotNull(language);
         RootXNode xnode = xnodeProcessor.serializeAnyData(object);
         return parser.serializeToString(xnode);
     }
+
+    public boolean canSerialize(Object value) {
+        return xnodeProcessor.canSerialize(value);
+    }
+
 
 //    public <T> String serializeAtomicValues(QName elementName, String language, T... values) throws SchemaException {
 //        Parser parser = getParserNotNull(language);
@@ -467,5 +540,4 @@ public class PrismContext {
         RootXNode rootXNode = xnodeProcessor.serializeItemAsRoot(item);
         return new RawType(rootXNode);
     }
-
 }

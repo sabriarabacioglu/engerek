@@ -27,7 +27,6 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.namespace.QName;
 
 import com.evolveum.midpoint.prism.delta.ItemDelta;
-import com.evolveum.midpoint.prism.dom.PrismDomProcessor;
 import com.evolveum.midpoint.prism.parser.DomParser;
 import com.evolveum.midpoint.prism.parser.JaxbDomHack;
 import com.evolveum.midpoint.prism.parser.XNodeProcessor;
@@ -1046,10 +1045,12 @@ public class PrismContainerValue<T extends Containerable> extends PrismValue imp
 	void diffItems(PrismContainerValue<T> thisValue, PrismContainerValue<T> other,
 			Collection<? extends ItemDelta> deltas, boolean ignoreMetadata, boolean isLiteral) {
 		
-		for (Item<?> thisItem: thisValue.getItems()) {
-			Item otherItem = other.findItem(thisItem.getElementName());
-			// The "delete" delta will also result from the following diff
-			thisItem.diffInternal(otherItem, deltas, ignoreMetadata, isLiteral);
+		if (thisValue.getItems() !=  null) {
+			for (Item<?> thisItem: thisValue.getItems()) {
+				Item otherItem = other.findItem(thisItem.getElementName());
+				// The "delete" delta will also result from the following diff
+				thisItem.diffInternal(otherItem, deltas, ignoreMetadata, isLiteral);
+			}
 		}
 		
 		if (other.getItems() != null) {

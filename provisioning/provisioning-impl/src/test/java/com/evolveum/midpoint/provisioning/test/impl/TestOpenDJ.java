@@ -29,13 +29,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
 import com.evolveum.midpoint.prism.PrismContext;
+
 import org.apache.commons.lang.StringUtils;
 import org.opends.server.types.SearchResultEntry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.w3c.dom.Element;
@@ -53,11 +52,9 @@ import com.evolveum.midpoint.common.refinery.RefinedAttributeDefinition;
 import com.evolveum.midpoint.common.refinery.RefinedObjectClassDefinition;
 import com.evolveum.midpoint.common.refinery.RefinedResourceSchema;
 import com.evolveum.midpoint.prism.Containerable;
-import com.evolveum.midpoint.prism.Objectable;
 import com.evolveum.midpoint.prism.PrismContainer;
 import com.evolveum.midpoint.prism.PrismObject;
 import com.evolveum.midpoint.prism.PrismPropertyDefinition;
-import com.evolveum.midpoint.prism.PrismPropertyValue;
 import com.evolveum.midpoint.prism.delta.ItemDelta;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.delta.PropertyDelta;
@@ -69,17 +66,11 @@ import com.evolveum.midpoint.prism.util.PrismAsserts;
 import com.evolveum.midpoint.prism.util.PrismTestUtil;
 import com.evolveum.midpoint.prism.xml.XmlTypeConverter;
 import com.evolveum.midpoint.provisioning.ProvisioningTestUtil;
-import com.evolveum.midpoint.provisioning.api.ProvisioningService;
-import com.evolveum.midpoint.provisioning.api.ResourceObjectChangeListener;
-import com.evolveum.midpoint.provisioning.impl.ConnectorManager;
-import com.evolveum.midpoint.provisioning.ucf.api.ConnectorFactory;
 import com.evolveum.midpoint.provisioning.ucf.api.ConnectorInstance;
 import com.evolveum.midpoint.provisioning.ucf.impl.ConnectorFactoryIcfImpl;
-import com.evolveum.midpoint.repo.api.RepositoryService;
 import com.evolveum.midpoint.schema.CapabilityUtil;
 import com.evolveum.midpoint.schema.DeltaConvertor;
 import com.evolveum.midpoint.schema.ResultHandler;
-import com.evolveum.midpoint.schema.SchemaConstantsGenerated;
 import com.evolveum.midpoint.schema.processor.ObjectClassComplexTypeDefinition;
 import com.evolveum.midpoint.schema.processor.ResourceSchema;
 import com.evolveum.midpoint.schema.result.OperationResult;
@@ -89,7 +80,6 @@ import com.evolveum.midpoint.schema.util.ResourceTypeUtil;
 import com.evolveum.midpoint.schema.util.SchemaDebugUtil;
 import com.evolveum.midpoint.task.api.Task;
 import com.evolveum.midpoint.task.api.TaskManager;
-import com.evolveum.midpoint.test.AbstractIntegrationTest;
 import com.evolveum.midpoint.test.IntegrationTestTools;
 import com.evolveum.midpoint.test.ldap.OpenDJController;
 import com.evolveum.midpoint.test.util.TestUtil;
@@ -109,26 +99,23 @@ import com.evolveum.midpoint.xml.ns._public.common.api_types_2.PropertyReference
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationStatusType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.CachingMetadataType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.CapabilitiesType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.CapabilityCollectionType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ProvisioningScriptHostType;
+import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowAssociationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowKindType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.XmlSchemaType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ActivationCapabilityType;
-import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.CapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.CreateCapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.CredentialsCapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.DeleteCapabilityType;
-import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.LiveSyncCapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ReadCapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ScriptCapabilityType;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ScriptCapabilityType.Host;
 import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.UpdateCapabilityType;
-import com.evolveum.prism.xml.ns._public.query_2.PagingType;
 import com.evolveum.prism.xml.ns._public.query_2.QueryType;
 
 /**
@@ -626,8 +613,8 @@ public class TestOpenDJ extends AbstractOpenDJTest {
 		String addedObjectOid = provisioningService.addObject(object.asPrismObject(), null, null, taskManager.createTaskInstance(), result);
 		assertEquals(ACCOUNT_MODIFY_OID, addedObjectOid);
 
-		ObjectModificationType objectChange = PrismTestUtil.unmarshalObject(
-				new File("src/test/resources/impl/account-change-description.xml"), ObjectModificationType.class);
+		ObjectModificationType objectChange = PrismTestUtil.parseAtomicValue(
+                new File("src/test/resources/impl/account-change-description.xml"), ObjectModificationType.COMPLEX_TYPE);
 		ObjectDelta<ShadowType> delta = DeltaConvertor.createObjectDelta(objectChange, object.asPrismObject().getDefinition());
 		
 		ItemPath icfNamePath = new ItemPath(
@@ -721,8 +708,8 @@ public class TestOpenDJ extends AbstractOpenDJTest {
 		String passwordBefore = OpenDJController.getAttributeValue(entryBefore, "userPassword");
 		assertNull("Unexpected password before change",passwordBefore);
 		
-		ObjectModificationType objectChange = PrismTestUtil.unmarshalObject(
-				new File("src/test/resources/impl/account-change-password.xml"), ObjectModificationType.class);
+		ObjectModificationType objectChange = PrismTestUtil.parseAtomicValue(
+                new File("src/test/resources/impl/account-change-password.xml"), ObjectModificationType.COMPLEX_TYPE);
 		ObjectDelta<ShadowType> delta = DeltaConvertor.createObjectDelta(objectChange, accountType.asPrismObject().getDefinition());
 		display("Object change",delta);
 
@@ -868,8 +855,8 @@ public class TestOpenDJ extends AbstractOpenDJTest {
 		String addedObjectOid = provisioningService.addObject(object.asPrismObject(), null, null, taskManager.createTaskInstance(), result);
 		assertEquals(ACCOUNT_DISABLE_SIMULATED_OID, addedObjectOid);
 
-		ObjectModificationType objectChange = PrismTestUtil.unmarshalObject(
-				new File(REQUEST_DISABLE_ACCOUNT_SIMULATED_FILENAME), ObjectModificationType.class);
+		ObjectModificationType objectChange = PrismTestUtil.parseAtomicValue(
+                new File(REQUEST_DISABLE_ACCOUNT_SIMULATED_FILENAME), ObjectModificationType.COMPLEX_TYPE);
 		ObjectDelta<ShadowType> delta = DeltaConvertor.createObjectDelta(objectChange, object.asPrismObject().getDefinition());
 		display("Object change",delta);
 
@@ -956,9 +943,128 @@ public class TestOpenDJ extends AbstractOpenDJTest {
         assertNotNull("No activation disableTimestamp in repo", repoDisableTimestamp);
         assertEquals("Wrong activation disableTimestamp in repo", 
         		XmlTypeConverter.createXMLGregorianCalendar(1999, 8, 7, 6, 5, 4), repoDisableTimestamp);
-			
+	}
+	
+	@Test
+	public void test190AddGroupSwashbucklers() throws Exception {
+		final String TEST_NAME = "test190AddGroupSwashbucklers";
+		TestUtil.displayTestTile(TEST_NAME);
+		
+		OperationResult result = new OperationResult(TestOpenDJ.class.getName()
+				+ "." + TEST_NAME);
+		
+		ShadowType object = parseObjectType(GROUP_SWASHBUCKLERS_FILE, ShadowType.class);
+		IntegrationTestTools.display("Adding object", object);
+
+		// WHEN
+		String addedObjectOid = provisioningService.addObject(object.asPrismObject(), null, null, taskManager.createTaskInstance(), result);
+		
+		// THEN
+		assertEquals(GROUP_SWASHBUCKLERS_OID, addedObjectOid);
+
+		ShadowType shadowType =  repositoryService.getObject(ShadowType.class, GROUP_SWASHBUCKLERS_OID,
+				null, result).asObjectable();
+		PrismAsserts.assertEqualsPolyString("Wrong ICF name (repo)", GROUP_SWASHBUCKLERS_DN, shadowType.getName());
+
+		ShadowType provisioningShadowType = provisioningService.getObject(ShadowType.class, GROUP_SWASHBUCKLERS_OID,
+				null, taskManager.createTaskInstance(), result).asObjectable();
+		PrismAsserts.assertEqualsPolyString("Wrong ICF name (provisioning)", GROUP_SWASHBUCKLERS_DN, provisioningShadowType.getName());
+		
+		String uid = ShadowUtil.getSingleStringAttributeValue(shadowType, ConnectorFactoryIcfImpl.ICFS_UID);		
+		assertNotNull(uid);
+		
+		SearchResultEntry ldapEntry = openDJController.searchAndAssertByEntryUuid(uid);
+		display("LDAP group", ldapEntry);
+		assertNotNull("No LDAP group entry");
+		String groupDn = ldapEntry.getDN().toString();
+		assertEquals("Wrong group DN", GROUP_SWASHBUCKLERS_DN, groupDn);
+	}
+	
+	@Test
+	public void test192AddAccountMorganWithAssociation() throws Exception {
+		final String TEST_NAME = "test192AddAccountMorganWithAssociation";
+		TestUtil.displayTestTile(TEST_NAME);
+		
+		OperationResult result = new OperationResult(TestOpenDJ.class.getName()
+				+ "." + TEST_NAME);
+
+		ShadowType object = parseObjectType(ACCOUNT_MORGAN_FILE, ShadowType.class);
+		IntegrationTestTools.display("Adding object", object);
+
+		// WHEN
+		String addedObjectOid = provisioningService.addObject(object.asPrismObject(), null, null, taskManager.createTaskInstance(), result);
+		
+		// THEN
+		assertEquals(ACCOUNT_MORGAN_OID, addedObjectOid);
+
+		ShadowType shadowType =  repositoryService.getObject(ShadowType.class, ACCOUNT_MORGAN_OID,
+				null, result).asObjectable();
+		PrismAsserts.assertEqualsPolyString("Wrong ICF name (repo)", ACCOUNT_MORGAN_DN, shadowType.getName());
+
+		ShadowType provisioningShadowType = provisioningService.getObject(ShadowType.class, ACCOUNT_MORGAN_OID,
+				null, taskManager.createTaskInstance(), result).asObjectable();
+		PrismAsserts.assertEqualsPolyString("Wrong ICF name (provisioning)", ACCOUNT_MORGAN_DN, provisioningShadowType.getName());
+		
+		String uid = ShadowUtil.getSingleStringAttributeValue(shadowType, ConnectorFactoryIcfImpl.ICFS_UID);		
+		assertNotNull(uid);
+		
+		List<ShadowAssociationType> associations = provisioningShadowType.getAssociation();
+		assertEquals("Unexpected number of associations", 1, associations.size());
+		ShadowAssociationType association = associations.get(0);
+		assertEquals("Wrong group OID in association", GROUP_SWASHBUCKLERS_OID, association.getShadowRef().getOid());
+		
+		SearchResultEntry accountEntry = openDJController.searchAndAssertByEntryUuid(uid);
+		display("LDAP account", accountEntry);
+		assertNotNull("No LDAP account entry");
+		String accountDn = accountEntry.getDN().toString();
+		assertEquals("Wrong account DN", ACCOUNT_MORGAN_DN, accountDn);
+		
+		SearchResultEntry groupEntry = openDJController.fetchEntry(GROUP_SWASHBUCKLERS_DN);
+		display("LDAP group", groupEntry);
+		assertNotNull("No LDAP group entry");
+		openDJController.assertUniqueMember(groupEntry, accountDn);
 	}
 
+	/**
+	 * Morgan has a group association. If the account is gone the group membership should also be gone.
+	 */
+	@Test
+	public void test199DeleteAccountMorgan() throws Exception {
+		final String TEST_NAME = "test199DeleteAccountMorgan";
+		TestUtil.displayTestTile(TEST_NAME);
+		Task task = taskManager.createTaskInstance(TestOpenDJ.class.getName() + "." + TEST_NAME);
+		OperationResult result = task.getResult();
+	
+		// WHEN
+		provisioningService.deleteObject(ShadowType.class, ACCOUNT_MORGAN_OID, null, null, task, result);
+
+		ShadowType objType = null;
+
+		try {
+			objType = provisioningService.getObject(ShadowType.class, ACCOUNT_MORGAN_OID,
+					null, task, result).asObjectable();
+			Assert.fail("Expected exception ObjectNotFoundException, but haven't got one.");
+		} catch (ObjectNotFoundException ex) {
+			System.out.println("Catched ObjectNotFoundException.");
+			assertNull(objType);
+		}
+
+		try {
+			objType = repositoryService.getObject(ShadowType.class, ACCOUNT_MORGAN_OID,
+					null, result).asObjectable();
+			// objType = container.getObject();
+			Assert.fail("Expected exception, but haven't got one.");
+		} catch (Exception ex) {
+			assertNull(objType);
+            assertEquals(ex.getClass(), ObjectNotFoundException.class);
+            assertTrue(ex.getMessage().contains(ACCOUNT_MORGAN_OID));
+		}
+		
+		SearchResultEntry groupEntry = openDJController.fetchEntry(GROUP_SWASHBUCKLERS_DN);
+		display("LDAP group", groupEntry);
+		assertNotNull("No LDAP group entry");
+		openDJController.assertNoUniqueMember(groupEntry, ACCOUNT_MORGAN_DN);
+	}
 	
 	@Test
 	public void test200SearchObjectsIterative() throws Exception {
@@ -976,8 +1082,8 @@ public class TestOpenDJ extends AbstractOpenDJTest {
 
 		final List<ShadowType> objectTypeList = new ArrayList<ShadowType>();
 
-		QueryType queryType = PrismTestUtil.unmarshalObject(new File(
-				"src/test/resources/impl/query-filter-all-accounts.xml"), QueryType.class);
+		QueryType queryType = PrismTestUtil.parseAtomicValue(new File(
+                "src/test/resources/impl/query-filter-all-accounts.xml"), QueryType.COMPLEX_TYPE);
 		ObjectQuery query = QueryJaxbConvertor.createObjectQuery(ShadowType.class, queryType, prismContext);
 		
 		provisioningService.searchObjectsIterative(ShadowType.class, query, null, new ResultHandler<ShadowType>() {
@@ -996,7 +1102,8 @@ public class TestOpenDJ extends AbstractOpenDJTest {
 			if (objType == null) {
 				System.out.println("Object not found in repo");
 			} else {
-				System.out.println("obj name: " + objType.getName());
+				//System.out.println("obj name: " + objType.getName());
+                System.out.println(object.asPrismObject().debugDump());
 			}
 		}
 	}
@@ -1016,8 +1123,8 @@ public class TestOpenDJ extends AbstractOpenDJTest {
 		String addedObjectOid = provisioningService.addObject(object.asPrismObject(), null, null, taskManager.createTaskInstance(), result);
 		assertEquals(ACCOUNT_SEARCH_OID, addedObjectOid);
 
-		QueryType queryType = PrismTestUtil.unmarshalObject(new File("src/test/resources/impl/query-filter-all-accounts.xml"), 
-				QueryType.class);
+		QueryType queryType = PrismTestUtil.parseAtomicValue(new File("src/test/resources/impl/query-filter-all-accounts.xml"),
+                QueryType.COMPLEX_TYPE);
 		ObjectQuery query = QueryJaxbConvertor.createObjectQuery(ShadowType.class, queryType, prismContext);
 
 		List<PrismObject<ShadowType>> objListType = 
@@ -1039,8 +1146,8 @@ public class TestOpenDJ extends AbstractOpenDJTest {
 		OperationResult result = new OperationResult(TestOpenDJ.class.getName()
 				+ ".test202SearchObjectsCompexFilter");
 
-		QueryType queryType = PrismTestUtil.unmarshalObject(new File("src/test/resources/impl/query-complex-filter.xml"), 
-				QueryType.class);
+		QueryType queryType = PrismTestUtil.parseAtomicValue(new File("src/test/resources/impl/query-complex-filter.xml"),
+                QueryType.COMPLEX_TYPE);
 		ObjectQuery query = QueryJaxbConvertor.createObjectQuery(ShadowType.class, queryType, prismContext);
 
 		List<PrismObject<ShadowType>> objListType = 

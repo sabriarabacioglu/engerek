@@ -56,7 +56,7 @@ import com.evolveum.midpoint.prism.delta.ItemDelta;
 import com.evolveum.midpoint.prism.delta.PrismValueDeltaSetTriple;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.delta.PropertyDelta;
-import com.evolveum.midpoint.prism.dom.PrismDomProcessor;
+
 import com.evolveum.midpoint.prism.match.MatchingRule;
 import com.evolveum.midpoint.prism.path.ItemPath;
 import com.evolveum.midpoint.prism.polystring.PolyString;
@@ -821,8 +821,11 @@ public class PrismAsserts {
 			QName expectedTypeName, ItemPath path) {
 		assertEquals("Wrong filter class", EqualsFilter.class, objectFilter.getClass());
 		EqualsFilter filter = (EqualsFilter) objectFilter;
-		assertEquals("Wrong filter definition element name", expectedFilterDef, filter.getDefinition().getName());
-		assertEquals("Wrong filter definition type", expectedTypeName, filter.getDefinition().getTypeName());
+		//we don't have definition in all situation..this is almost OK..it will be computed dynamicaly
+		if (filter.getDefinition() != null){
+			assertEquals("Wrong filter definition element name", expectedFilterDef, filter.getDefinition().getName());
+			assertEquals("Wrong filter definition type", expectedTypeName, filter.getDefinition().getTypeName());
+		}
 		assertEquals("Wrong filter path", path, filter.getFullPath());
 	}
 	
