@@ -2,6 +2,7 @@ package com.evolveum.midpoint.web.page.forgetpassword;
 
 
 import com.evolveum.midpoint.model.api.ModelService;
+import com.evolveum.midpoint.web.application.PageDescriptor;
 import com.evolveum.midpoint.model.api.PolicyViolationException;
 import com.evolveum.midpoint.prism.PrismContainer;
 import com.evolveum.midpoint.prism.PrismContainerValue;
@@ -76,6 +77,9 @@ import java.util.List;
 /**
  * @author sabria
  */
+
+
+@PageDescriptor(url = "/forgetpassword")
 public class PageForgetPassword extends PageBase {
 
 	private static final Trace LOGGER = TraceManager.getTrace(PageForgetPassword.class);
@@ -84,7 +88,6 @@ public class PageForgetPassword extends PageBase {
 
     private static final String ID_USERNAME = "username";
     private static final String ID_EMAIL = "email";
-    private static final String ID_NICKNAME = "nickname";
     private static final String DOT_CLASS = PageForgetPassword.class.getName() + ".";
     private static final String LOAD_USER_EMAIL = DOT_CLASS + "loadUserEmail";
     private static final String OPERATION_LOAD_ACCOUNT = DOT_CLASS + "loadAccount";
