@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 Evolveum
+ * Copyright (c) 2010-2014 Evolveum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
@@ -64,15 +66,23 @@ import com.evolveum.midpoint.model.lens.Clockwork;
 import com.evolveum.midpoint.model.lens.ContextFactory;
 import com.evolveum.midpoint.model.lens.LensContext;
 import com.evolveum.midpoint.model.lens.projector.Projector;
+import com.evolveum.midpoint.prism.Item;
+import com.evolveum.midpoint.prism.PrismContainer;
+import com.evolveum.midpoint.prism.PrismContainerValue;
 import com.evolveum.midpoint.prism.PrismContext;
 import com.evolveum.midpoint.prism.PrismObject;
 import com.evolveum.midpoint.prism.PrismObjectDefinition;
 import com.evolveum.midpoint.prism.PrismReference;
 import com.evolveum.midpoint.prism.PrismReferenceValue;
+import com.evolveum.midpoint.prism.PrismValue;
+import com.evolveum.midpoint.prism.Visitable;
+import com.evolveum.midpoint.prism.Visitor;
 import com.evolveum.midpoint.prism.crypto.Protector;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.path.ItemPath;
 import com.evolveum.midpoint.prism.path.ItemPathSegment;
+import com.evolveum.midpoint.prism.query.NoneFilter;
+import com.evolveum.midpoint.prism.query.ObjectFilter;
 import com.evolveum.midpoint.prism.query.ObjectPaging;
 import com.evolveum.midpoint.prism.query.ObjectQuery;
 import com.evolveum.midpoint.provisioning.api.ProvisioningOperationOptions;
@@ -90,11 +100,15 @@ import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.schema.result.OperationResultRunner;
 import com.evolveum.midpoint.schema.result.OperationResultStatus;
 import com.evolveum.midpoint.security.api.Authorization;
+import com.evolveum.midpoint.security.api.AuthorizationConstants;
+import com.evolveum.midpoint.security.api.ObjectSecurityConstraints;
+import com.evolveum.midpoint.security.api.OwnerResolver;
 import com.evolveum.midpoint.security.api.SecurityEnforcer;
 import com.evolveum.midpoint.security.api.UserProfileService;
 import com.evolveum.midpoint.task.api.Task;
 import com.evolveum.midpoint.task.api.TaskManager;
 import com.evolveum.midpoint.util.DebugUtil;
+import com.evolveum.midpoint.util.exception.CommonException;
 import com.evolveum.midpoint.util.exception.CommunicationException;
 import com.evolveum.midpoint.util.exception.ConfigurationException;
 import com.evolveum.midpoint.util.exception.ExpressionEvaluationException;
@@ -107,6 +121,7 @@ import com.evolveum.midpoint.util.logging.LoggingUtils;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ImportOptionsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_2a.AuthorizationDecisionType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorHostType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
@@ -269,9 +284,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 		
 		result.cleanupResult();
 		
-		securityEnforcer.authorize(ModelService.AUTZ_READ_URL, object, null, null, result);
-		
-        validateObject(object, rootOptions, result);
+        postProcessObject(object, rootOptions, result);
 		return object;
 	}
 
@@ -382,12 +395,12 @@ public class ModelController implements ModelService, ModelInteractionService, T
 						if (ModelExecuteOptions.isOverwrite(options)) {
 							repoOptions.setOverwrite(true);
 						}
-						securityEnforcer.authorize(AUTZ_ADD_URL, delta.getObjectToAdd(), null, null, result);
+						securityEnforcer.authorize(AUTZ_ADD_URL, null, delta.getObjectToAdd(), null, null, null, result);
 						String oid = cacheRepositoryService.addObject(delta.getObjectToAdd(), repoOptions, result);
 						delta.setOid(oid);
 					} else if (delta.isDelete()) {
 						PrismObject<? extends ObjectType> existingObject = cacheRepositoryService.getObject(delta.getObjectTypeClass(), delta.getOid(), null, result);
-						securityEnforcer.authorize(AUTZ_DELETE_URL, existingObject, null, null, result);
+						securityEnforcer.authorize(AUTZ_DELETE_URL, null, existingObject, null, null, null, result);
 						if (ObjectTypes.isClassManagedByProvisioning(delta.getObjectTypeClass())) {
                             Utils.clearRequestee(task);
 							provisioning.deleteObject(delta.getObjectTypeClass(), delta.getOid(),
@@ -398,7 +411,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 						}
 					} else if (delta.isModify()) {
 						PrismObject existingObject = cacheRepositoryService.getObject(delta.getObjectTypeClass(), delta.getOid(), null, result);
-						securityEnforcer.authorize(AUTZ_MODIFY_URL, existingObject, delta, null, result);
+						securityEnforcer.authorize(AUTZ_MODIFY_URL, null, existingObject, delta, null, null, result);
 						cacheRepositoryService.modifyObject(delta.getObjectTypeClass(), delta.getOid(), 
 								delta.getModifications(), result);
 					} else {
@@ -413,7 +426,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 			} else {				
 				
 				LensContext<? extends ObjectType> context = contextFactory.createContext(deltas, options, task, result);
-
+				// Note: Request authorization happens inside clockwork
 				clockwork.run(context, task, result);
 						
 			}
@@ -686,6 +699,14 @@ public class ModelController implements ModelService, ModelInteractionService, T
 		result.addParams(new String[] { "query", "paging", "searchProvider" },
                 query, (query != null ? query.getPaging() : "undefined"), searchProvider);
 		
+		query = preProcessQuerySecurity(type, query);
+		if (query != null && query.getFilter() != null && query.getFilter() instanceof NoneFilter) {
+			LOGGER.trace("Security denied the search");
+			result.recordStatus(OperationResultStatus.NOT_APPLICABLE, "Denied");
+			RepositoryCache.exit();
+			return new ArrayList<>();
+		}
+		
 		List<PrismObject<T>> list = null;
 		try {
 			if (query != null){
@@ -748,7 +769,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 			RepositoryCache.exit();
 		}
 		
-		validateObjects(list, rootOptions, result);
+		postProcessObjects(list, rootOptions, result);
 
 		return list;
 	}
@@ -775,6 +796,14 @@ public class ModelController implements ModelService, ModelInteractionService, T
 		result.addParams(new String[] { "query", "paging", "searchProvider" },
                 query, (query != null ? query.getPaging() : "undefined"), searchProvider);
 		
+		query = preProcessQuerySecurity(type, query);
+		if (query != null && query.getFilter() != null && query.getFilter() instanceof NoneFilter) {
+			LOGGER.trace("Security denied the search");
+			result.recordStatus(OperationResultStatus.NOT_APPLICABLE, "Denied");
+			RepositoryCache.exit();
+			return;
+		}
+		
         ResultHandler<T> internalHandler = new ResultHandler<T>() {
 
             @Override
@@ -785,13 +814,13 @@ public class ModelController implements ModelService, ModelInteractionService, T
                             hook.invoke(object, options, task, result);
                         }
                     }
+                    postProcessObject(object, rootOptions, parentResult);
                 } catch (SchemaException | ObjectNotFoundException | SecurityViolationException
                         | CommunicationException | ConfigurationException ex) {
                     parentResult.recordFatalError(ex);
                     throw new SystemException(ex.getMessage(), ex);
                 }
 
-				validateObject(object, rootOptions, parentResult);
 				return handler.handle(object, parentResult);
 			}
 		};
@@ -915,7 +944,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 	
 	@Override
 	public PrismObject<UserType> findShadowOwner(String accountOid, Task task, OperationResult parentResult)
-			throws ObjectNotFoundException {
+			throws ObjectNotFoundException, SecurityViolationException, SchemaException {
 		Validate.notEmpty(accountOid, "Account oid must not be null or empty.");
 		Validate.notNull(parentResult, "Result type must not be null.");
 
@@ -950,7 +979,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 		}
 
 		if (user != null) {
-			validateObject(user, null, result);
+			postProcessObject(user, null, result);
 		}
 		
 		return user;
@@ -1208,7 +1237,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 	 */
 	@Override
 	public Set<ConnectorType> discoverConnectors(ConnectorHostType hostType, OperationResult parentResult)
-			throws CommunicationException {
+			throws CommunicationException, SecurityViolationException, SchemaException {
 		RepositoryCache.enter();
 		OperationResult result = parentResult.createSubresult(DISCOVER_CONNECTORS);
 		Set<ConnectorType> discoverConnectors;
@@ -1219,22 +1248,96 @@ public class ModelController implements ModelService, ModelInteractionService, T
 			RepositoryCache.exit();
 			throw e;
 		}
-		validateObjectTypes(discoverConnectors, null, result);
+		postProcessObjectTypes(discoverConnectors, null, result);
 		result.computeStatus("Connector discovery failed");
 		RepositoryCache.exit();
 		result.cleanupResult();
 		return discoverConnectors;
 	}
 	
-	private <T extends ObjectType> void validateObjectTypes(Collection<T> objectTypes, GetOperationOptions options, OperationResult result) {
+	private <T extends ObjectType> void postProcessObjectTypes(Collection<T> objectTypes, GetOperationOptions options, OperationResult result) throws SecurityViolationException, SchemaException {
 		for (T objectType: objectTypes) {
-			validateObject(objectType.asPrismObject(), options, result);
+			postProcessObject(objectType.asPrismObject(), options, result);
 		}
 	}
 	
-	private <T extends ObjectType> void validateObjects(Collection<PrismObject<T>> objects, GetOperationOptions options, OperationResult result) {
+	private <T extends ObjectType> void postProcessObjects(Collection<PrismObject<T>> objects, GetOperationOptions options, OperationResult result) throws SecurityViolationException, SchemaException {
 		for (PrismObject<T> object: objects) {
-			validateObject(object, options, result);
+			postProcessObject(object, options, result);
+		}
+	}
+	
+	/**
+	 * Validate the objects, remove any non-visible properties (security) and so on. This method is called for
+	 * any object that is returned from the Model Service.  
+	 */
+	private <T extends ObjectType> void postProcessObject(PrismObject<T> object, GetOperationOptions options, OperationResult result) throws SecurityViolationException, SchemaException {
+		validateObject(object, options, result);
+		try {
+			ObjectSecurityConstraints securityConstraints = securityEnforcer.compileSecurityContraints(object, null);
+			if (LOGGER.isTraceEnabled()) {
+				LOGGER.trace("Security constrains for {}:\n{}", object, securityConstraints==null?"null":securityConstraints.debugDump());
+			}
+			if (securityConstraints == null) {
+				throw new SecurityViolationException("Access denied");
+			}
+			AuthorizationDecisionType globalDecision = securityConstraints.getActionDecistion(ModelService.AUTZ_READ_URL, null);
+			if (globalDecision == AuthorizationDecisionType.DENY) {
+				// shortcut
+				throw new SecurityViolationException("Access denied");
+			}
+			if (globalDecision == AuthorizationDecisionType.ALLOW && securityConstraints.hasNoItemDecisions()) {
+				// shortcut, nothing to do
+			} else {
+				removeDeniedItems((List)object.getValue().getItems(), securityConstraints, globalDecision);
+				if (object.isEmpty()) {
+					// let's make it explicit
+					throw new SecurityViolationException("Access denied");
+				}
+			}
+			
+		} catch (SecurityViolationException | SchemaException e) {
+			result.recordFatalError(e);
+			throw e;
+		}
+	}
+	
+	private void removeDeniedItems(List<Item<? extends PrismValue>> items, ObjectSecurityConstraints securityContraints, AuthorizationDecisionType defaultDecision) {
+		Iterator<Item<?>> iterator = items.iterator();
+		while (iterator.hasNext()) {
+			Item<? extends PrismValue> item = iterator.next();
+			ItemPath itemPath = item.getPath();
+			AuthorizationDecisionType itemDecision = securityContraints.findItemDecision(itemPath, ModelService.AUTZ_READ_URL, null);
+			if (item instanceof PrismContainer<?>) {
+				if (itemDecision == AuthorizationDecisionType.DENY) {
+					// Explicitly denied access to the entire container
+					iterator.remove();
+				} else {
+					// No explicit decision (even ALLOW is not final here as something may be denied deeper inside)
+					AuthorizationDecisionType subDefaultDecision = defaultDecision;
+					if (itemDecision == AuthorizationDecisionType.ALLOW) {
+						// This means allow to all subitems unless otherwise denied.
+						subDefaultDecision = AuthorizationDecisionType.ALLOW;
+					}
+					List<? extends PrismContainerValue<?>> values = ((PrismContainer<?>)item).getValues();
+					Iterator<? extends PrismContainerValue<?>> vi = values.iterator();
+					while (vi.hasNext()) {
+						PrismContainerValue<?> cval = vi.next();
+						List<Item<?>> subitems = cval.getItems();
+						removeDeniedItems(subitems, securityContraints, subDefaultDecision);
+						if (cval.getItems().isEmpty()) {
+							vi.remove();
+						}
+					}
+					if (item.isEmpty()) {
+						iterator.remove();
+					}
+				}
+			} else {
+				if (itemDecision == AuthorizationDecisionType.DENY || (itemDecision == null && defaultDecision == null)) {
+					iterator.remove();
+				}
+			}
 		}
 	}
 	
@@ -1325,6 +1428,24 @@ public class ModelController implements ModelService, ModelInteractionService, T
     public <F extends ObjectType> ModelContext<F> unwrapModelContext(LensContextType wrappedContext, OperationResult result) throws SchemaException, ConfigurationException, ObjectNotFoundException, CommunicationException {
         return LensContext.fromLensContextType(wrappedContext, prismContext, provisioning, result);
     }
+    
+    private <O extends ObjectType> ObjectQuery preProcessQuerySecurity(Class<O> objectType, ObjectQuery origQuery) throws SchemaException {
+    	ObjectFilter origFilter = null;
+    	if (origQuery != null) {
+    		origFilter = origQuery.getFilter();
+    	}
+		ObjectFilter secFilter = securityEnforcer.preProcessObjectFilter(ModelService.AUTZ_READ_URL, null, objectType, origFilter);
+		if (origQuery != null) {
+			origQuery.setFilter(secFilter);
+			return origQuery;
+		} else if (secFilter == null) {
+			return null;
+		} else {
+			ObjectQuery objectQuery = new ObjectQuery();
+			objectQuery.setFilter(secFilter);
+			return objectQuery;
+		}
+	}
 
     //region Task-related operations
 

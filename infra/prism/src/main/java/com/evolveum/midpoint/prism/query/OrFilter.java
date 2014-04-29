@@ -59,7 +59,7 @@ public class OrFilter extends NaryLogicalFilter {
 		StringBuilder sb = new StringBuilder();
 		DebugUtil.indentDebugDump(sb, indent);
 		sb.append("OR:");
-		for (ObjectFilter filter : getCondition()){
+		for (ObjectFilter filter : getConditions()){
 			sb.append("\n");
 			sb.append(filter.debugDump(indent + 1));
 		}
@@ -71,9 +71,9 @@ public class OrFilter extends NaryLogicalFilter {
 		StringBuilder sb = new StringBuilder();
 		sb.append("OR: ");
 		sb.append("(");
-		for (int i = 0; i < getCondition().size(); i++){
-			sb.append(getCondition().get(i));
-			if (i != getCondition().size() -1){
+		for (int i = 0; i < getConditions().size(); i++){
+			sb.append(getConditions().get(i));
+			if (i != getConditions().size() -1){
 				sb.append(", ");
 			}
 		}
@@ -84,7 +84,7 @@ public class OrFilter extends NaryLogicalFilter {
 
 	@Override
 	public <T extends Objectable> boolean match(PrismObject<T> object, MatchingRuleRegistry matchingRuleRegistry) {
-		for (ObjectFilter filter : getCondition()){
+		for (ObjectFilter filter : getConditions()){
 			if (filter.match(object, matchingRuleRegistry)){
 				return true;
 			}

@@ -2634,6 +2634,14 @@
                         </xsd:documentation>
                     </xsd:annotation>
                 </xsd:element>
+                
+                <xsd:element name="focusMappings" type="tns:MappingsType" minOccurs="0">
+                    <xsd:annotation>
+                        <xsd:documentation>
+                            Set of mappings that are applied to a focus in addition to object template.
+                        </xsd:documentation>
+                    </xsd:annotation>
+                </xsd:element>
 
             </xsd:choice>
 
@@ -2662,6 +2670,22 @@
     </xsd:complexType>
 
     <xsd:element name="assignment" type="tns:AssignmentType"/>
+    
+    <xsd:complexType name="MappingsType">
+        <xsd:annotation>
+            <xsd:documentation>
+                Genric set of mappings.
+            </xsd:documentation>
+            <xsd:appinfo>
+                <a:container/>
+            </xsd:appinfo>
+        </xsd:annotation>
+       	<xsd:sequence>
+       		<xsd:element ref="tns:description" minOccurs="0"/>
+   			<xsd:element name="mapping" type="tns:MappingType" minOccurs="0" maxOccurs="unbounded">
+                   </xsd:element>
+       </xsd:sequence>
+	</xsd:complexType>
 
     <xsd:complexType name="ActivationType">
         <xsd:annotation>
@@ -6228,6 +6252,14 @@
         			</xsd:documentation>
         		</xsd:annotation>
         	</xsd:element>
+        	<xsd:element name="phase" type="tns:AuthorizationPhaseType" minOccurs="0" maxOccurs="1">
+        		<xsd:annotation>
+        			<xsd:documentation>
+        				Specifies when to conduct authorizationa and what exactly to authorize.
+        				If no phase is specified then the authorization applies to all phases.
+        			</xsd:documentation>
+        		</xsd:annotation>
+        	</xsd:element>
         	<xsd:element name="object" type="tns:ObjectSpecificationType" minOccurs="0" maxOccurs="unbounded">
         		<xsd:annotation>
         			<xsd:documentation>
@@ -6275,6 +6307,42 @@
                 <xsd:annotation>
                     <xsd:appinfo>
                         <jaxb:typesafeEnumMember name="DENY"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:simpleType name="AuthorizationPhaseType">
+        <xsd:annotation>
+            <xsd:appinfo>
+                <jaxb:typesafeEnumClass/>
+            </xsd:appinfo>
+        </xsd:annotation>
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="request">
+                <xsd:annotation>
+                	<xsd:documentation>
+                		Authorize the requested operations. I.e. the authorization happens
+                		at the beginning of request processing. 
+                		The request may be spread to many other oprations but in this case
+                		only the explicitly requested set is authorized.
+                	</xsd:documentation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="REQUEST"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="execution">
+                <xsd:annotation>
+                	<xsd:documentation>
+                		Authorize the executed operations. I.e. the authorization happens
+                		at the end of request processing. 
+                		The request may be spread to many other oprations but in this case
+                		all the requested and computed operations are authorized.
+                	</xsd:documentation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="EXECUTION"/>
                     </xsd:appinfo>
                 </xsd:annotation>
             </xsd:enumeration>
@@ -6328,6 +6396,14 @@
         			</xsd:documentation>
         		</xsd:annotation>
         	</xsd:element>
+	        <xsd:element name="owner" type="tns:ObjectSpecificationType" minOccurs="0" maxOccurs="1">
+				<xsd:annotation>
+					<xsd:documentation>
+						The object matches the specification if it has an owner specified by this element.
+						The "owner" means a focus that has a link to the object.
+					</xsd:documentation>
+				</xsd:annotation>
+	        </xsd:element>
         </xsd:sequence>
         <xsd:attribute name="id" type="xsd:long" use="optional"/>
 	</xsd:complexType>
@@ -6685,7 +6761,7 @@
                 		</xsd:annotation>
                 	</xsd:element>
                 	<xsd:element name="iteration" type="tns:IterationSpecificationType" minOccurs="0"/>
-                    <xsd:element name="mapping" type="tns:MappingType" minOccurs="0"
+                    <xsd:element name="mapping" type="tns:ObjectTemplateMappingType" minOccurs="0"
                                  maxOccurs="unbounded">
                         <xsd:annotation>
                             <xsd:documentation>
@@ -6703,35 +6779,42 @@
                             </xsd:documentation>
                         </xsd:annotation>
                     </xsd:element>
-                    <xsd:element name="accountConstruction" type="tns:ConstructionType" minOccurs="0"
-                                 maxOccurs="unbounded">
-                        <xsd:annotation>
-                            <xsd:documentation>
-                            	. This should no longer be used. It will disappear.
-                            	
-                                Defines an account that the user should have.
-                                It defines the resource and account type. Such
-                                account will be created (if it does not yet
-                                exist) and will be linked to the user.
-                                Usual outbound expressions from the resource
-                                definition are used to set-up the account
-                                parameters.
-
-                                This may be non-systemic short-term solution. We
-                                need a way how "assign" the account to the user
-                                correctly.
-                            </xsd:documentation>
-                            <xsd:appinfo>
-			           			<a:deprecated>true</a:deprecated>
-			           		</xsd:appinfo>
-                        </xsd:annotation>
-                    </xsd:element>
                 </xsd:sequence>
             </xsd:extension>
         </xsd:complexContent>
     </xsd:complexType>
     <xsd:element name="userTemplate" type="tns:ObjectTemplateType" substitutionGroup="c:object"/>
     <xsd:element name="objectTemplate" type="tns:ObjectTemplateType" substitutionGroup="c:object"/>
+    
+    <xsd:complexType name="ObjectTemplateMappingType">
+    	<xsd:complexContent>
+    		<xsd:extension base="tns:MappingType">
+    			<xsd:sequence>
+    				<xsd:element name="evaluationPhase" type="tns:ObjectTemplateMappingEvaluationPhaseType" 
+    								minOccurs="0" default="beforeAssignments"/>
+    			</xsd:sequence>
+    		</xsd:extension>
+    	</xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:simpleType name="ObjectTemplateMappingEvaluationPhaseType">
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="beforeAssignments">
+                <xsd:annotation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="BEFORE_ASSIGNMENTS"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="afterAssignments">
+                <xsd:annotation>
+                    <xsd:appinfo>
+                        <jaxb:typesafeEnumMember name="AFTER_ASSIGNMENTS"/>
+                    </xsd:appinfo>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
     
     <xsd:complexType name="OrgType">
         <xsd:annotation>
@@ -8635,7 +8718,8 @@
     <xsd:complexType name="EventHandlerType">
         <xsd:annotation>
             <xsd:documentation>
-                An event handler - typically either a filter, a notifier, a fork (fan-out), or a chain of handlers.
+                An event handler. It can contain conditions (general expressions or lists of event categories, operation types,
+                success/failure statuses, and so on), subhandlers (chained or forked), and various kinds of notifiers.
             </xsd:documentation>
         </xsd:annotation>
         <xsd:sequence>
@@ -8677,6 +8761,33 @@
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
+            <xsd:element name="objectKind" type="tns:ShadowKindType" minOccurs="0" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Resource object kinds supported by this handler. (Default: all)
+                        Kinds not listed are filtered out: not handled by this handler nor any of its successors.
+                        (Relevant only for account-related events.)
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="objectIntent" type="xsd:string" minOccurs="0" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Resource object intents supported by this handler. (Default: all)
+                        Intents not listed are filtered out: not handled by this handler nor any of its successors.
+                        (Relevant only for account-related events.)
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="focusType" type="xsd:QName" minOccurs="0" maxOccurs="unbounded">
+                <xsd:annotation>
+                    <xsd:documentation>
+                        Focus types supported by this handler. (Default: all)
+                        Types not listed are filtered out: not handled by this handler nor any of its successors.
+                        (Relevant only for model-generated events.)
+                    </xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
             <xsd:element name="expressionFilter" type="tns:ExpressionType" minOccurs="0" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
@@ -8705,7 +8816,7 @@
                     </xsd:documentation>
                 </xsd:annotation>
             </xsd:element>
-            <xsd:element name="simpleAccountNotifier" type="tns:SimpleAccountNotifierType" minOccurs="0" maxOccurs="unbounded">
+            <xsd:element name="simpleResourceObjectNotifier" type="tns:SimpleResourceObjectNotifierType" minOccurs="0" maxOccurs="unbounded">
                 <xsd:annotation>
                     <xsd:documentation>
                         TODO
@@ -8753,17 +8864,17 @@
             </xsd:appinfo>
         </xsd:annotation>
         <xsd:restriction base="xsd:string">
-            <xsd:enumeration value="accountEvent">
+            <xsd:enumeration value="resourceObjectEvent">
                 <xsd:annotation>
                     <xsd:appinfo>
-                        <jaxb:typesafeEnumMember name="ACCOUNT_EVENT"/>
+                        <jaxb:typesafeEnumMember name="RESOURCE_OBJECT_EVENT"/>
                     </xsd:appinfo>
                 </xsd:annotation>
             </xsd:enumeration>
-            <xsd:enumeration value="userEvent">
+            <xsd:enumeration value="modelEvent">
                 <xsd:annotation>
                     <xsd:appinfo>
-                        <jaxb:typesafeEnumMember name="USER_EVENT"/>
+                        <jaxb:typesafeEnumMember name="MODEL_EVENT"/>
                     </xsd:appinfo>
                 </xsd:annotation>
             </xsd:enumeration>
@@ -8941,7 +9052,7 @@
         </xsd:complexContent>
     </xsd:complexType>
 
-    <xsd:complexType name="SimpleAccountNotifierType">
+    <xsd:complexType name="SimpleResourceObjectNotifierType">
         <xsd:annotation>
             <xsd:documentation>
                 TODO

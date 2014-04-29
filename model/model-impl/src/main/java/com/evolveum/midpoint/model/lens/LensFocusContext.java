@@ -23,6 +23,7 @@ import com.evolveum.midpoint.prism.PrismContainer;
 import com.evolveum.midpoint.prism.PrismContainerDefinition;
 import com.evolveum.midpoint.prism.PrismContext;
 import com.evolveum.midpoint.prism.PrismObject;
+import com.evolveum.midpoint.prism.PrismValue;
 import com.evolveum.midpoint.prism.delta.ChangeType;
 import com.evolveum.midpoint.prism.delta.ContainerDelta;
 import com.evolveum.midpoint.prism.delta.ItemDelta;
@@ -39,6 +40,7 @@ import com.evolveum.midpoint.xml.ns._public.common.common_2a.AssignmentType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.model.model_context_2.LensFocusContextType;
+
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -216,6 +218,29 @@ public class LensFocusContext<O extends ObjectType> extends LensElementContext<O
 			secondaryDeltas.adopt(prismContext);
 		}
 	}
+	
+	public void clearIntermediateResults() {
+		// Nothing to do
+	}
+	
+	public void applyProjectionWaveSecondaryDeltas(Collection<ItemDelta<? extends PrismValue>> itemDeltas) throws SchemaException {
+		ObjectDelta<O> wavePrimaryDelta = getProjectionWavePrimaryDelta();
+		ObjectDelta<O> waveSecondaryDelta = getProjectionWaveSecondaryDelta();
+		for (ItemDelta<? extends PrismValue> itemDelta: itemDeltas) {
+			if (itemDelta != null && !itemDelta.isEmpty()) {
+				if (wavePrimaryDelta == null || !wavePrimaryDelta.containsModification(itemDelta)) {
+					if (waveSecondaryDelta == null) {
+						waveSecondaryDelta = new ObjectDelta<O>(getObjectTypeClass(), ChangeType.MODIFY, getPrismContext());
+						if (getObjectNew() != null && getObjectNew().getOid() != null){
+							waveSecondaryDelta.setOid(getObjectNew().getOid());
+						}
+						setProjectionWaveSecondaryDelta(waveSecondaryDelta);
+					}
+					waveSecondaryDelta.mergeModification(itemDelta);
+				}
+			}
+		}
+	}
     
     @Override
 	public LensFocusContext<O> clone(LensContext lensContext) {
@@ -257,6 +282,7 @@ public class LensFocusContext<O extends ObjectType> extends LensElementContext<O
         if (getIteration() != 0) {
         	sb.append(", iteration=").append(getIteration()).append(" (").append(getIterationToken()).append(")");
         }
+        sb.append(", syncIntent=").append(getSynchronizationIntent());
         
         sb.append("\n");
         DebugUtil.debugDumpWithLabel(sb, getDebugDumpTitle("old"), getObjectOld(), indent+1);

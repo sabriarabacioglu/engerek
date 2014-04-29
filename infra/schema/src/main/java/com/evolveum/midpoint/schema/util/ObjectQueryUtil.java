@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 Evolveum
+ * Copyright (c) 2010-2014 Evolveum
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.evolveum.midpoint.schema.util;
 import javax.xml.namespace.QName;
 
 import com.evolveum.midpoint.prism.match.PolyStringOrigMatchingRule;
+
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.mutable.MutableBoolean;
 
@@ -26,10 +27,14 @@ import com.evolveum.midpoint.prism.ItemDefinition;
 import com.evolveum.midpoint.prism.PrismContext;
 import com.evolveum.midpoint.prism.PrismObject;
 import com.evolveum.midpoint.prism.polystring.PolyString;
+import com.evolveum.midpoint.prism.query.AllFilter;
 import com.evolveum.midpoint.prism.query.AndFilter;
 import com.evolveum.midpoint.prism.query.EqualsFilter;
+import com.evolveum.midpoint.prism.query.InOidFilter;
+import com.evolveum.midpoint.prism.query.NoneFilter;
 import com.evolveum.midpoint.prism.query.ObjectFilter;
 import com.evolveum.midpoint.prism.query.ObjectQuery;
+import com.evolveum.midpoint.prism.query.OrFilter;
 import com.evolveum.midpoint.prism.query.OrgFilter;
 import com.evolveum.midpoint.prism.query.RefFilter;
 import com.evolveum.midpoint.prism.query.ValueFilter;
@@ -130,6 +135,22 @@ public class ObjectQueryUtil {
 		filter.accept(visitor);
 		return hasAllDefinitions.booleanValue();
 	}
+	
+	public static void assertPropertyOnly(ObjectFilter filter, final String message) {
+		Visitor visitor = new Visitor() {
+			@Override
+			public void visit(ObjectFilter filter) {
+				if (filter instanceof OrgFilter) {
+					if (message == null) {
+						throw new IllegalArgumentException(filter.toString());
+					} else {
+						throw new IllegalArgumentException(message+": "+filter);
+					}
+				}
+			}
+		};
+		filter.accept(visitor);
+	}
 
 	public static String dump(QueryType query) {
 		if (query == null) {
@@ -142,5 +163,83 @@ public class ObjectQueryUtil {
 		else
 			sb.append("(no filter)");
 		return sb.toString();
+	}
+
+	/**
+	 * Merges the two provided arguments into one AND filter in the most efficient way. 
+	 */
+	public static ObjectFilter filterAnd(ObjectFilter origFilter, ObjectFilter additionalFilter) {
+		if (origFilter == additionalFilter) {
+			// AND with itself
+			return origFilter;
+		}
+		if (origFilter == null) {
+			return additionalFilter;
+		}
+		if (additionalFilter == null) {
+			return origFilter;
+		}
+		if (origFilter instanceof NoneFilter) {
+			return origFilter;
+		}
+		if (additionalFilter instanceof NoneFilter) {
+			return additionalFilter;
+		}
+		if (origFilter instanceof AllFilter) {
+			return additionalFilter;
+		}
+		if (additionalFilter instanceof AllFilter) {
+			return origFilter;
+		}
+		if (origFilter instanceof AndFilter) {
+			if (!((AndFilter)origFilter).contains(additionalFilter)) {
+				((AndFilter)origFilter).addCondition(additionalFilter);
+			}
+			return origFilter;
+		}
+		return AndFilter.createAnd(origFilter, additionalFilter);
+	}
+	
+	/**
+	 * Merges the two provided arguments into one OR filter in the most efficient way. 
+	 */
+	public static ObjectFilter filterOr(ObjectFilter origFilter, ObjectFilter additionalFilter) {
+		if (origFilter == additionalFilter) {
+			// OR with itself
+			return origFilter;
+		}
+		if (origFilter == null) {
+			return additionalFilter;
+		}
+		if (additionalFilter == null) {
+			return origFilter;
+		}
+		if (origFilter instanceof AllFilter) {
+			return origFilter;
+		}
+		if (additionalFilter instanceof AllFilter) {
+			return additionalFilter;
+		}
+		if (origFilter instanceof NoneFilter) {
+			return additionalFilter;
+		}
+		if (additionalFilter instanceof NoneFilter) {
+			return origFilter;
+		}
+		if (origFilter instanceof OrFilter) {
+			if (!((OrFilter)origFilter).contains(additionalFilter)) {
+				((OrFilter)origFilter).addCondition(additionalFilter);
+			}
+			return origFilter;
+		}
+		return OrFilter.createOr(origFilter, additionalFilter);
+	}
+
+	public static boolean isAll(ObjectFilter filter) {
+		return filter == null || filter instanceof AllFilter;
+	}
+	
+	public static boolean isNone(ObjectFilter filter) {
+		return filter != null && filter instanceof NoneFilter;
 	}
 }
