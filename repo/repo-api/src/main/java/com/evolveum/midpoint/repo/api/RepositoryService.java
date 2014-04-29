@@ -34,6 +34,7 @@ import com.evolveum.midpoint.util.exception.ObjectNotFoundException;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.CleanupPolicyType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
@@ -340,6 +341,8 @@ public interface RepositoryService {
 	 */
 	<T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectQuery query) throws SchemaException;
 	
+	boolean isAnySubordinate(String upperOrgOid, Collection<String> lowerObjectOids) throws SchemaException;
+	
 	/**
 	 * <p>Modifies object using relative change description.</p>
 	 * Must fail if user with
@@ -505,14 +508,4 @@ public interface RepositoryService {
 	 * without changing the result structure. It must not throw an exception in this case.
 	 */
     public void repositorySelfTest(OperationResult parentResult);
-
-    /**
-     * Clean up closed tasks that are older than specified.
-     *
-     * Deprecated: use TaskManager.cleanupTasks instead.
-     *
-     * @param policy Tasks will be deleted based on this policy.
-     */
-    @Deprecated
-    public void cleanupTasks(CleanupPolicyType policy, OperationResult parentResult);
 }

@@ -203,7 +203,7 @@ public class MidpointFunctionsImpl implements MidpointFunctions {
     public Collection<UserType> getManagersOfOrg(String orgOid) throws SchemaException {
         Set<UserType> retval = new HashSet<UserType>();
         OperationResult result = new OperationResult("getManagerOfOrg");
-        ObjectQuery objectQuery = ObjectQuery.createObjectQuery(OrgFilter.createOrg(orgOid, null, 1));
+        ObjectQuery objectQuery = ObjectQuery.createObjectQuery(OrgFilter.createOrg(orgOid, OrgFilter.Scope.ONE_LEVEL));
         List<PrismObject<ObjectType>> members = repositoryService.searchObjects(ObjectType.class, objectQuery, null, result);
         for (PrismObject<ObjectType> member : members) {
             if (member.asObjectable() instanceof UserType) {
@@ -777,7 +777,7 @@ public class MidpointFunctionsImpl implements MidpointFunctions {
 	}
 
 	@Override
-	public PrismObject<UserType> findShadowOwner(String accountOid) throws ObjectNotFoundException {
+	public PrismObject<UserType> findShadowOwner(String accountOid) throws ObjectNotFoundException, SecurityViolationException, SchemaException {
 		return modelService.findShadowOwner(accountOid, getCurrentTask(), getCurrentResult());
 	}
 

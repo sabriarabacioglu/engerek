@@ -50,6 +50,7 @@ import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.common_2a.*;
 import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
+
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
@@ -63,6 +64,7 @@ import org.hibernate.jdbc.Work;
 import org.springframework.stereotype.Repository;
 
 import javax.xml.namespace.QName;
+
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -91,9 +93,13 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
 
     public SqlRepositoryServiceImpl(SqlRepositoryFactory repositoryFactory) {
         super(repositoryFactory);
+    }
 
-        //there maybe different implementations for different RMDBs
-        orgClosureManager = new OrgClosureManager();
+    private OrgClosureManager getOrgClosureManager() {
+        if (orgClosureManager == null) {
+            orgClosureManager = new OrgClosureManager(getConfiguration());
+        }
+        return orgClosureManager;
     }
 
     private <T extends ObjectType> PrismObject<T> getObject(Session session, Class<T> type, String oid,
@@ -159,7 +165,7 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
             RObject obj = (RObject) criteria.uniqueResult();
 
             if (obj != null) {
-                obj.toJAXB(getPrismContext(), options).asPrismObject();
+                obj.toJAXB(getPrismContext(), null).asPrismObject();
                 fullObject = new GetObjectResult(obj.getFullObject(), obj.getStringsCount(), obj.getLongsCount(),
                         obj.getDatesCount(), obj.getReferencesCount(), obj.getPolysCount());
             }
@@ -530,7 +536,8 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         updateFullObject(rObject, object);
         RObject merged = (RObject) session.merge(rObject);
         //todo finish orgClosureManager
-        //orgClosureManager.updateOrgClosure(modifications, session, originalOid, object.getCompileTimeClass(), operation);
+//        orgClosureManager.updateOrgClosure(modifications, session, merged.getOid(), object.getCompileTimeClass(),
+//                OrgClosureManager.Operation.ADD);
 
         //update org. unit hierarchy based on modifications
         if (modifications == null || modifications.isEmpty()) {
@@ -600,7 +607,6 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         //Collection<ReferenceDelta> modifications = createAddParentRefDelta(object);
         //orgClosureManager.updateOrgClosure(modifications, session, oid, object.getCompileTimeClass(),
         //        OrgClosureManager.Operation.ADD);
-
 
 
         if (objectType instanceof OrgType || !objectType.getParentOrgRef().isEmpty()) {
@@ -892,14 +898,13 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
                 SQLQuery sqlQuery = session.createSQLQuery("SELECT COUNT(*) FROM " + RUtil.getTableName(hqlType));
                 longCount = (Number) sqlQuery.uniqueResult();
             } else {
-                LOGGER.trace("Updating query criteria.");
                 QueryEngine engine = new QueryEngine(getConfiguration(), getPrismContext());
                 RQuery rQuery = engine.interpret(query, type, null, true, session);
 
-                LOGGER.trace("Selecting total count.");
                 longCount = (Number) rQuery.uniqueResult();
             }
-            count = longCount.intValue();
+            LOGGER.trace("Found {} objects.", longCount);
+            count = longCount != null ? longCount.intValue() : 0;
         } catch (QueryException | RuntimeException ex) {
             handleGeneralException(ex, session, result);
         } finally {
@@ -1000,7 +1005,13 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
                                                                      Session session) throws SchemaException {
 
         String xml = RUtil.getXmlFromByteArray(result.getFullObject(), getConfiguration().isUseZip());
-        PrismObject<T> prismObject = getPrismContext().parseObject(xml);
+        PrismObject<T> prismObject;
+        try {
+            prismObject = getPrismContext().parseObject(xml);
+        } catch (SchemaException e) {
+            LOGGER.debug("Couldn't parse object because of schema exception ({}):\nObject: {}", e, xml);
+            throw e;
+        }
 
         if (UserType.class.equals(prismObject.getCompileTimeClass())) {
             if (SelectorOptions.hasToLoadPath(UserType.F_JPEG_PHOTO, options)) {
@@ -1755,59 +1766,18 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         }
     }
 
-    @Deprecated
     @Override
-    public void cleanupTasks(CleanupPolicyType policy, OperationResult parentResult) {
-        OperationResult subResult = parentResult.createSubresult(CLEANUP_TASKS);
-        cleanup(RTask.class, policy, subResult);
-    }
+	public boolean isAnySubordinate(String upperOrgOid, Collection<String> lowerObjectOids) throws SchemaException {
+		Validate.notNull(upperOrgOid, "upperOrgOid must not be null.");
+        Validate.notNull(lowerObjectOids, "lowerObjectOids must not be null.");
 
+        if (LOGGER.isTraceEnabled()) LOGGER.trace("Querying for subordination upper {}, lower {}", new Object[]{upperOrgOid, lowerObjectOids});
 
-    /**
-     * This is attempt to do task cleanup by custom native queries. Hibernate tries to delete task
-     * through temporary table with columns oid, id. That's not a bad idea until it attempts to call
-     * delete from statement with "in" clause with two columns (oid, id). H2 and SQL Server fails
-     * with in clause that contains more than one column.
-     * <p/>
-     * Therefore this method do cleanup by creating temporary table only with oid (id is always 0).
-     * Maybe big schema cleanup would help or something like that.
-     * <p/>
-     * Somebody improve this when there's time for it.
-     * <p/>
-     * DEPRECATED: task cleanup is currently done in task manager because of the need of
-     * deleting whole task trees at once (MID-1439).
-     *
-     * @param entity
-     * @param minValue
-     * @param session
-     * @return number of deleted tasks
-     */
-    @Override
-    @Deprecated
-    protected int cleanupAttempt(Class entity, Date minValue, Session session) {
-        if (!RTask.class.equals(entity)) {
-            return 0;
+        if (lowerObjectOids.isEmpty()) {
+        	// trivial case
+        	return false;
         }
-
-        LOGGER.debug("Doing task cleanup, date={}", minValue);
-        Query query = session.createQuery("delete from RTask as t where t.completionTimestamp < :timestamp");
-        query.setParameter("timestamp", XMLGregorianCalendarType.asXMLGregorianCalendar(minValue));
-        return query.executeUpdate();
-    }
-
-    @Override
-    public <T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectQuery query) throws SchemaException {
-        Validate.notNull(object, "Object must not be null.");
-        Validate.notNull(query, "Query must not be null.");
-
-        if (LOGGER.isTraceEnabled()) LOGGER.trace("Matching object {} with query {}", new Object[]{object, query});
-
-        ObjectFilter rootFilter = query.getFilter();
-        if (RUtil.findOrgFilter(rootFilter) == null) {
-            //if query doesn't contain OrgFilter then we can match through ObjectQuery.match() method
-            return ObjectQuery.match(object, query.getFilter(), getMatchingRuleRegistry());
-        }
-
+        
         int attempt = 1;
 
         SqlPerformanceMonitor pm = getPerformanceMonitor();
@@ -1815,164 +1785,69 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         try {
             while (true) {
                 try {
-                    return matchObject(object, rootFilter);
+                    return isAnySubordinateAttempt(upperOrgOid, lowerObjectOids);
                 } catch (RuntimeException ex) {
-                    attempt = logOperationAttempt(object.getOid(), "matching", attempt, ex, null);
+                    attempt = logOperationAttempt(upperOrgOid, "isAnySubordinate", attempt, ex, null);
                     pm.registerOperationNewTrial(opHandle, attempt);
                 }
             }
         } finally {
             pm.registerOperationFinish(opHandle, attempt);
         }
-    }
-
-    private <T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectFilter rootFilter) throws SchemaException {
-        Session session = null;
+	}
+    
+	private boolean isAnySubordinateAttempt(String upperOrgOid, Collection<String> lowerObjectOids) {
+		Session session = null;
         try {
             session = beginTransaction();
 
-            if (rootFilter instanceof OrgFilter) {
-                return matchObject(object.getOid(), rootFilter, session);
-            }
+            Query query;
+            if (lowerObjectOids.size() == 1) {
+                query = session.getNamedQuery("isAnySubordinateAttempt.oneLowerOid");
+            } else {
+                StringBuilder sb = new StringBuilder();
+                sb.append("select count(*) from ROrgClosure o where ");
 
-            if (!(rootFilter instanceof NaryLogicalFilter)) {
-                throw new NotImplementedException("Not yet implemented.");
-            }
-
-            //if there are only org. filters then we have to check DB
-            NaryLogicalFilter logical = (NaryLogicalFilter) rootFilter;
-            List<ObjectFilter> conditions = logical.getCondition();
-            boolean onlyOrgs = true;
-            for (ObjectFilter child : conditions) {
-                if (RUtil.findOrgFilter(child) == null) {
-                    onlyOrgs = false;
-                    break;
+                sb.append('(');
+                Iterator<String> iterator = lowerObjectOids.iterator();
+                int paramIndex = 0;
+                while (iterator.hasNext()) {
+                    iterator.next();
+                    sb.append("(o.ancestorOid=:aOid").append(paramIndex);
+                    sb.append(" and o.descendantOid=:dOid").append(paramIndex);
+                    sb.append(')');
+                    paramIndex++;
+                    if (iterator.hasNext()) {
+                        sb.append(" or ");
+                    }
                 }
+                sb.append(')');
+
+                query = session.createQuery(sb.toString());
             }
 
-            if (onlyOrgs) {
-                return matchObject(object.getOid(), rootFilter, session);
+            Iterator<String> iterator = lowerObjectOids.iterator();
+            int paramIndex = 0;
+            while (iterator.hasNext()) {
+            	String subOid = iterator.next();
+            	query.setString("aOid" + paramIndex, upperOrgOid);
+            	query.setString("dOid" + paramIndex, subOid);
+            	paramIndex++;
             }
-
-            //if there is org. filter and "property" filter we have to check property filter first (performance)
-            ObjectFilter c1 = conditions.get(0);
-            ObjectFilter c2 = conditions.get(1);
-
-            //we sort filters, first property filter then "org. filter"
-            if (RUtil.findOrgFilter(c1) != null) {
-                ObjectFilter c3 = c1;
-                c1 = c2;
-                c2 = c3;
-            }
-
-            boolean c1Result = ObjectQuery.match(object, c1, getMatchingRuleRegistry());
-
-            if (logical instanceof AndFilter) {
-                return c1Result && matchObject(object.getOid(), c2, session);
-            }
-
-            return c1Result || matchObject(object.getOid(), c2, session);
+            
+            Number number = (Number) query.uniqueResult();
+            return (number != null && number.longValue() != 0L) ? true : false;
         } catch (RuntimeException ex) {
             handleGeneralException(ex, session, null);
         } finally {
             cleanupSessionAndResult(session, null);
         }
 
-        throw new SystemException("Match object failed somehow, this really should not happen.");
+        throw new SystemException("isAnySubordinateAttempt failed somehow, this really should not happen.");
     }
 
-    private boolean matchObject(String dOid, ObjectFilter filter, Session session) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("select count(*) from ROrgClosure o where ");
-        buildMatchObjectQuery(sb, filter, 0);
-
-        Query query = session.createQuery(sb.toString());
-        insertParamsToMatchObjectQuery(query, dOid, filter, 0);
-
-        Number number = (Number) query.uniqueResult();
-        if (number.longValue() != 0L) {
-            return true;
-        }
-
-        return false;
-    }
-
-    private void insertParamsToMatchObjectQuery(Query query, String dOid, ObjectFilter filter, int paramIndex) {
-        if (filter instanceof OrgFilter) {
-            OrgFilter orgFilter = (OrgFilter) filter;
-
-            query.setString("aOid" + paramIndex, orgFilter.getOrgRef().getOid());
-            query.setString("dOid" + paramIndex, dOid);
-            if (orgFilter.getMinDepth() == null && orgFilter.getMaxDepth() == null) {
-                return;
-            }
-
-            if (ObjectUtils.equals(orgFilter.getMinDepth(), orgFilter.getMaxDepth())) {
-                query.setInteger("depth" + paramIndex, orgFilter.getMinDepth());
-            } else {
-                if (orgFilter.getMinDepth() != null) {
-                    query.setInteger("minDepth" + paramIndex, orgFilter.getMinDepth());
-                }
-                if (orgFilter.getMaxDepth() != null) {
-                    query.setInteger("maxDepth" + paramIndex, orgFilter.getMaxDepth());
-                }
-            }
-        }
-
-        if (filter instanceof LogicalFilter) {
-            LogicalFilter logical = (LogicalFilter) filter;
-
-            for (ObjectFilter child : logical.getCondition()) {
-                insertParamsToMatchObjectQuery(query, dOid, child, paramIndex++);
-            }
-        }
-    }
-
-    private void buildMatchObjectQuery(StringBuilder sb, ObjectFilter filter, int paramIndex) {
-        if (filter instanceof OrgFilter) {
-            OrgFilter orgFilter = (OrgFilter) filter;
-
-            sb.append("(o.ancestorOid=:aOid").append(paramIndex);
-            sb.append(" and o.descendantOid=:dOid").append(paramIndex).append(' ');
-            if (orgFilter.getMinDepth() == null && orgFilter.getMaxDepth() == null) {
-                sb.append(')');
-                return;
-            }
-
-            if (ObjectUtils.equals(orgFilter.getMinDepth(), orgFilter.getMaxDepth())) {
-                sb.append("and o.depth = :depth").append(paramIndex).append(' ');
-            } else {
-                if (orgFilter.getMinDepth() != null) {
-                    sb.append("and o.depth > :minDepth").append(paramIndex).append(' ');
-                }
-                if (orgFilter.getMaxDepth() != null) {
-                    sb.append("and o.depth <= :maxDepth").append(paramIndex).append(' ');
-                }
-            }
-            sb.append(')');
-        }
-
-        if (filter instanceof NotFilter) {
-            throw new NotImplementedException("Support not yet implemented.");
-        }
-
-        if (filter instanceof LogicalFilter) {
-            LogicalFilter logical = (LogicalFilter) filter;
-            List<ObjectFilter> conditions = logical.getCondition();
-            sb.append('(');
-            for (int i = 0; i < conditions.size(); i++) {
-                ObjectFilter child = conditions.get(i);
-                buildMatchObjectQuery(sb, child, paramIndex++);
-
-                if (i < conditions.size() - 1) {
-                    if (logical instanceof AndFilter) {
-                        sb.append(" and ");
-                    } else {
-                        sb.append(" or ");
-                    }
-                }
-            }
-            sb.append(')');
-        }
+	@Override
+    public <T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectQuery query) throws SchemaException {
+        throw new NotImplementedException("Not yet implemented.");
     }
 }

@@ -54,8 +54,6 @@ public class OrgFilterQuery extends CustomQuery {
         return true;
     }
 
-    // http://stackoverflow.com/questions/10515391/oracle-equivalent-of-postgres-distinct-on
-    // select distinct col1, first_value(col2) over (partition by col1 order by col2 asc) from tmp
     @Override
     public RQuery createQuery(ObjectQuery objectQuery, Class<? extends ObjectType> type,
                               Collection<SelectorOptions<GetOperationOptions>> options, boolean countingObjects,
@@ -65,97 +63,45 @@ public class OrgFilterQuery extends CustomQuery {
 
         LOGGER.trace("createOrgQuery {}, counting={}, filter={}", new Object[]{type.getSimpleName(), countingObjects, filter});
 
-        if (getRepoConfiguration().isUsingOracle()) {
-            return createOracleQuery(filter, type, countingObjects, session);
+        if (countingObjects) {
+            return countQuery(filter, type, session);
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("select ");
-        if (countingObjects) {
-            sb.append("count(*) ");
+        if (OrgFilter.Scope.ONE_LEVEL.equals(filter.getScope())) {
+            sb.append("select o.fullObject,o.stringsCount,o.longsCount,o.datesCount,o.referencesCount,o.polysCount from ");
+            sb.append(ClassMapper.getHQLType(type)).append(" as o where o.oid in (select distinct p.ownerOid from RParentOrgRef p where p.targetOid=:oid)");
         } else {
-            sb.append("o.fullObject,o.stringsCount,o.longsCount,o.datesCount,o.referencesCount,o.polysCount ");
+            sb.append("select o.fullObject,o.stringsCount,o.longsCount,o.datesCount,o.referencesCount,o.polysCount from ");
+            sb.append(ClassMapper.getHQLType(type)).append(" as o where o.oid in (");
+            //todo change to sb.append("select d.descendantOid from ROrgClosure as d where d.ancestorOid = :oid and d.descendantOid != :oid)");
+            sb.append("select distinct d.descendantOid from ROrgClosure as d where d.ancestorOid = :oid and d.descendantOid != :oid)");
         }
-        sb.append("from ").append(ClassMapper.getHQLType(type)).append(" as o left join o.descendants as d ");
-        sb.append("where d.ancestorOid = :aOid ");
-        if (filter.getMinDepth() != null || filter.getMaxDepth() != null) {
-            if (ObjectUtils.equals(filter.getMinDepth(), filter.getMaxDepth())) {
-                sb.append("and d.depth = :depth ");
-            } else {
-                if (filter.getMinDepth() != null) {
-                    sb.append("and d.depth > :minDepth ");
-                }
-                if (filter.getMaxDepth() != null) {
-                    sb.append("and d.depth <= :maxDepth ");
-                }
-            }
-        }
-
-        if (countingObjects) {
-            sb.append("group by o.oid");
-        } else {
-            sb.append("group by o.fullObject, o.stringsCount,o.longsCount,o.datesCount,o.referencesCount,o.polysCount, o.name.orig order by o.name.orig asc");
-        }
-
         Query query = session.createQuery(sb.toString());
-        updateQuery(query, filter, countingObjects);
+        query.setString("oid", filter.getOrgRef().getOid());
+        query.setResultTransformer(GetObjectResult.RESULT_TRANSFORMER);
 
         return new RQueryImpl(query);
     }
 
-    /**
-     * This query is probably much faster than the standard one,
-     * but it's using IN clause, we need to check it's performance. [lazyman]
-     */
-    private RQuery createOracleQuery(OrgFilter filter, Class<? extends ObjectType> type, boolean countingObjects,
-                                     Session session) {
+    private RQuery countQuery(OrgFilter filter, Class type, Session session) {
         StringBuilder sb = new StringBuilder();
-        sb.append("select ");
-        if (countingObjects) {
-            sb.append("count(*) ");
+        if (OrgFilter.Scope.ONE_LEVEL.equals(filter.getScope())) {
+            sb.append("select count(distinct o.oid) from ");
+            sb.append(ClassMapper.getHQLType(type)).append(" o left join o.parentOrgRef p where p.targetOid=:oid");
         } else {
-            sb.append("o.fullObject,o.stringsCount,o.longsCount,o.datesCount,o.referencesCount,o.polysCount ");
-        }
-        sb.append("from ").append(ClassMapper.getHQLType(type)).append(" as o where o.oid in (");
-        sb.append("select d.descendantOid from ROrgClosure as d ");
-        sb.append("where d.ancestorOid = :aOid ");
-        if (filter.getMinDepth() != null || filter.getMaxDepth() != null) {
-            if (ObjectUtils.equals(filter.getMinDepth(), filter.getMaxDepth())) {
-                sb.append("and d.depth = :depth ");
+            if (ObjectType.class.equals(type)) {
+                //todo change to select count(*) from ROrgClosure d where d.ancestorOid = :oid
+                sb.append("select count(distinct d.descendantOid) from ROrgClosure d where d.ancestorOid = :oid and d.descendantOid != :oid");
             } else {
-                if (filter.getMinDepth() != null) {
-                    sb.append("and d.depth > :minDepth ");
-                }
-                if (filter.getMaxDepth() != null) {
-                    sb.append("and d.depth <= :maxDepth ");
-                }
+                //todo change to sb.append("select count(d.descendantOid) from ").append(ClassMapper.getHQLType(type));
+                sb.append("select count(distinct d.descendantOid) from ").append(ClassMapper.getHQLType(type));
+                sb.append(" as o left join o.descendants as d where d.ancestorOid = :oid and d.descendantOid != :oid");
             }
         }
-        sb.append("group by d.descendantOid)");
-
         Query query = session.createQuery(sb.toString());
-        updateQuery(query, filter, countingObjects);
+        query.setString("oid", filter.getOrgRef().getOid());
 
         return new RQueryImpl(query);
-    }
-
-    private void updateQuery(Query query, OrgFilter filter, boolean countingObjects) {
-        query.setString("aOid", filter.getOrgRef().getOid());
-        if (filter.getMinDepth() != null || filter.getMaxDepth() != null) {
-            if (ObjectUtils.equals(filter.getMinDepth(), filter.getMaxDepth())) {
-                query.setInteger("depth", filter.getMinDepth());
-            } else {
-                if (filter.getMinDepth() != null) {
-                    query.setInteger("minDepth", filter.getMinDepth());
-                }
-                if (filter.getMaxDepth() != null) {
-                    query.setInteger("maxDepth", filter.getMaxDepth());
-                }
-            }
-        }
-
-        if (!countingObjects) {
-            query.setResultTransformer(GetObjectResult.RESULT_TRANSFORMER);
-        }
     }
 }

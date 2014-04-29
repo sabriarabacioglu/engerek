@@ -934,13 +934,16 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 	protected <O extends ObjectType> PrismObject<O> findObjectByName(Class<O> type, String name) throws SchemaException, ObjectNotFoundException, SecurityViolationException, CommunicationException, ConfigurationException {
 		Task task = taskManager.createTaskInstance(AbstractModelIntegrationTest.class.getName() + ".findObjectByName");
         OperationResult result = task.getResult();
-        ObjectQuery query = ObjectQueryUtil.createNameQuery(PrismTestUtil.createPolyString(name), prismContext);
-		List<PrismObject<O>> objects = modelService.searchObjects(type, query, null, task, result);
+		List<PrismObject<O>> objects = modelService.searchObjects(type, createNameQuery(name), null, task, result);
 		if (objects.isEmpty()) {
 			return null;
 		}
 		assert objects.size() == 1 : "Too many objects found for name "+name+": "+objects;
 		return objects.iterator().next();
+	}
+	
+	protected ObjectQuery createNameQuery(String name) throws SchemaException {
+		return ObjectQueryUtil.createNameQuery(PrismTestUtil.createPolyString(name), prismContext);
 	}
 	
 	protected PrismObject<UserType> findUserByUsername(String username) throws SchemaException, ObjectNotFoundException, SecurityViolationException, CommunicationException, ConfigurationException {
@@ -1225,7 +1228,7 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 	protected List<PrismObject<OrgType>> getSubOrgs(String baseOrgOid, Task task, OperationResult result) throws SchemaException, ObjectNotFoundException, SecurityViolationException, CommunicationException, ConfigurationException {
 		ObjectQuery query = new ObjectQuery();
 		PrismReferenceValue baseOrgRef = new PrismReferenceValue(baseOrgOid);
-		ObjectFilter filter = OrgFilter.createOrg(baseOrgRef, 1, 1);
+		ObjectFilter filter = OrgFilter.createOrg(baseOrgRef, OrgFilter.Scope.ONE_LEVEL);
 		query.setFilter(filter);
 		return modelService.searchObjects(OrgType.class, query, null, task, result);
 	}
@@ -1268,7 +1271,11 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 		MidPointAsserts.assertAssignments(user, expectedNumber);
 	}
 	
-	protected void assertAssigned(PrismObject<UserType> user, String targetOid, QName refType) {
+	protected <F extends FocusType> void assertAssignments(PrismObject<F> user, Class expectedType, int expectedNumber) {
+		MidPointAsserts.assertAssignments(user, expectedType, expectedNumber);
+	}
+	
+	protected <F extends FocusType> void assertAssigned(PrismObject<F> user, String targetOid, QName refType) {
 		MidPointAsserts.assertAssigned(user, targetOid, refType);
 	}
 	
@@ -1579,8 +1586,8 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
         TestUtil.assertSuccess(result);
 	}
 	
-    protected List<PrismObject<OrgType>> searchOrg(String baseOrgOid, Integer minDepth, Integer maxDepth, Task task, OperationResult result) throws SchemaException, ObjectNotFoundException, SecurityViolationException, CommunicationException, ConfigurationException {
-        ObjectFilter filter = OrgFilter.createOrg(baseOrgOid, minDepth, maxDepth);
+    protected List<PrismObject<OrgType>> searchOrg(String baseOrgOid, OrgFilter.Scope scope, Task task, OperationResult result) throws SchemaException, ObjectNotFoundException, SecurityViolationException, CommunicationException, ConfigurationException {
+        ObjectFilter filter = OrgFilter.createOrg(baseOrgOid, scope);
 		ObjectQuery query = ObjectQuery.createObjectQuery(filter);
 		return modelService.searchObjects(OrgType.class, query, null, task, result);
 	}
@@ -1944,6 +1951,15 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 		result.computeStatus();
 		TestUtil.assertSuccess("getObject(Task) result not success", result);
 		return retTask;
+	}
+	
+	protected <O extends ObjectType> PrismObject<O> getObject(Class<O> type, String oid) throws ObjectNotFoundException, SchemaException, SecurityViolationException, CommunicationException, ConfigurationException {
+		Task task = taskManager.createTaskInstance(AbstractModelIntegrationTest.class.getName() + ".getObject");
+        OperationResult result = task.getResult();
+		PrismObject<O> object = modelService.getObject(type, oid, null, task, result);
+		result.computeStatus();
+		TestUtil.assertSuccess(result);
+		return object;
 	}
 
 	protected <O extends ObjectType> void addObject(File file) throws ObjectAlreadyExistsException, ObjectNotFoundException, SchemaException, ExpressionEvaluationException, CommunicationException, ConfigurationException, PolicyViolationException, SecurityViolationException, IOException {
