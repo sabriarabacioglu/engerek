@@ -28,6 +28,7 @@ import com.evolveum.midpoint.web.page.admin.reports.PageCreatedReports;
 import com.evolveum.midpoint.web.page.admin.reports.PageReports;
 import com.evolveum.midpoint.web.page.admin.resources.PageResourceEdit;
 import com.evolveum.midpoint.web.page.admin.resources.PageResources;
+import com.evolveum.midpoint.web.page.admin.roles.PageAuthorizationTypes;
 import com.evolveum.midpoint.web.page.admin.roles.PageRole;
 import com.evolveum.midpoint.web.page.admin.roles.PageRoles;
 import com.evolveum.midpoint.web.page.admin.server.PageTaskAdd;
@@ -207,7 +208,8 @@ public class PageAdmin extends PageBase {
         MenuBarItem roles = new MenuBarItem(createStringResource("PageAdmin.menu.top.roles"), null);
         roles.addMenuItem(new MenuItem(createStringResource("PageAdmin.menu.top.roles.list"), PageRoles.class));
         roles.addMenuItem(new MenuItem(createStringResource("PageAdmin.menu.top.roles.new"), PageRole.class));
-
+        roles.addMenuItem(new MenuItem(createStringResource("PageAdmin.menu.top.roles.auth"), PageAuthorizationTypes.class));
+        
         return roles;
     }
 }
