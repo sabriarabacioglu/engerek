@@ -26,7 +26,9 @@ import com.evolveum.midpoint.prism.PrismObjectDefinition;
 import com.evolveum.midpoint.prism.PrismProperty;
 import com.evolveum.midpoint.prism.PrismPropertyDefinition;
 import com.evolveum.midpoint.prism.PrismPropertyValue;
+import com.evolveum.midpoint.prism.parser.QueryConvertor;
 import com.evolveum.midpoint.prism.path.ItemPath;
+import com.evolveum.midpoint.prism.query.ObjectFilter;
 import com.evolveum.midpoint.prism.schema.PrismSchema;
 import com.evolveum.midpoint.prism.schema.SchemaRegistry;
 import com.evolveum.midpoint.schema.constants.MidPointConstants;
@@ -38,8 +40,8 @@ import com.evolveum.midpoint.schema.util.ObjectTypeUtil;
 import com.evolveum.midpoint.util.DebugDumpable;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SystemException;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.*;
-import com.evolveum.prism.xml.ns._public.query_2.SearchFilterType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
+import com.evolveum.prism.xml.ns._public.query_3.SearchFilterType;
 
 import javax.xml.namespace.QName;
 
@@ -393,7 +395,8 @@ public class RefinedObjectClassDefinition extends ObjectClassComplexTypeDefiniti
 		ResourceObjectPattern resourceObjectPattern = new ResourceObjectPattern(rAccountDef);
 		SearchFilterType filterType = patternType.getFilter();
 		if (filterType != null) {
-			resourceObjectPattern.addFilter(filterType);
+			ObjectFilter filter = QueryConvertor.parseFilter(filterType, rAccountDef.getObjectDefinition());
+			resourceObjectPattern.addFilter(filter);
 			return resourceObjectPattern;
 		}
 		
@@ -730,9 +733,13 @@ public class RefinedObjectClassDefinition extends ObjectClassComplexTypeDefiniti
     public String debugDump() {
         return debugDump(0);
     }
-
+    
     @Override
     public String debugDump(int indent) {
+    	return debugDump(indent, null);
+    }
+
+    protected String debugDump(int indent, LayerType layer) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < indent; i++) {
             sb.append(INDENT_STRING);
@@ -749,14 +756,13 @@ public class RefinedObjectClassDefinition extends ObjectClassComplexTypeDefiniti
         if (getIntent() != null) {
         	sb.append("intent=").append(getIntent());
         }
-        sb.append(")\n");
-        Iterator<? extends ItemDefinition> i = getDefinitions().iterator();
-        while (i.hasNext()) {
-            ItemDefinition def = i.next();
-            sb.append(def.debugDump(indent + 1));
-            if (i.hasNext()) {
-                sb.append("\n");
-            }
+        if (layer != null) {
+        	sb.append(",layer=").append(layer);
+        }
+        sb.append(")");
+        for (RefinedAttributeDefinition rAttrDef: getAttributeDefinitions()) {
+            sb.append("\n");
+            sb.append(rAttrDef.debugDump(indent + 1, layer));
         }
         return sb.toString();
     }

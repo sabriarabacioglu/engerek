@@ -37,7 +37,7 @@ import com.evolveum.midpoint.task.api.Task;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.*;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
 
 import org.apache.cxf.common.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,9 +98,9 @@ public class GeneralNotifier extends BaseHandler {
 
         logStart(getLogger(), event, eventHandlerType);
 
-        boolean retval = aggregatedEventHandler.processEvent(event, eventHandlerType, notificationManager, task, result);
+        boolean applies = aggregatedEventHandler.processEvent(event, eventHandlerType, notificationManager, task, result);
 
-        if (retval) {
+        if (applies) {
 
             GeneralNotifierType generalNotifierType = (GeneralNotifierType) eventHandlerType;
 
@@ -154,8 +154,8 @@ public class GeneralNotifier extends BaseHandler {
                 }
             }
         }
-        logEnd(getLogger(), event, eventHandlerType, retval);
-        return retval;
+        logEnd(getLogger(), event, eventHandlerType, applies);
+        return true;            // not-applicable notifiers do not stop processing of other notifiers
     }
 
     protected boolean quickCheckApplicability(Event event, GeneralNotifierType generalNotifierType, OperationResult result) {

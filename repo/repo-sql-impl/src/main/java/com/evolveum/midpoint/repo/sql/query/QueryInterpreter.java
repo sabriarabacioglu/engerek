@@ -39,7 +39,8 @@ import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.LoggingUtils;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.reflect.ConstructorUtils;
 import org.hibernate.Criteria;
@@ -139,7 +140,7 @@ public class QueryInterpreter {
             criteria = updatePagingAndSorting(criteria, type, query.getPaging());
         }
 
-        if (!usesOrgFilter(query)) {
+      if (!countingObjects) {
             ProjectionList projections = Projections.projectionList();
             projections.add(Projections.property("fullObject"));
 
@@ -152,17 +153,7 @@ public class QueryInterpreter {
             criteria.setProjection(projections);
         }
 
-
         return criteria;
-    }
-
-    private boolean usesOrgFilter(ObjectQuery query) {
-        OrgFilter filter = RUtil.findOrgFilter(query);
-        if (filter != null && !filter.isRoot()) {
-            return true;
-        }
-
-        return false;
     }
 
     private Criteria interpretQuery(ObjectQuery query, Class<? extends ObjectType> type, PrismContext prismContext,

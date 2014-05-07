@@ -69,11 +69,11 @@ import com.evolveum.midpoint.util.exception.ObjectNotFoundException;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ObjectModificationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OrgType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ObjectModificationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OrgType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
 
 @ContextConfiguration(locations = {"../../../../../ctx-test.xml"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -278,21 +278,6 @@ public class OrgStructTest extends BaseSQLRepoTest {
 			LOGGER.debug("=======O {}: {}; got={}", new Object[]{upperOrgOid, lowerObjectOidCol, expected});
 		}
 	}
-
-	private ObjectFilter createOrgNameFilter(String name) throws SchemaException {
-		return EqualsFilter.createEqual(OrgType.F_NAME, OrgType.class, prismContext, PrismTestUtil.createPolyString(name));
-	}
-    
-    private ObjectFilter createOrgDisplayNameFilter(String name) throws SchemaException {
-		return EqualsFilter.createEqual(OrgType.F_DISPLAY_NAME, OrgType.class, prismContext, PrismTestUtil.createPolyString(name));
-	}
-
-	private <O extends ObjectType> void assertMatch(PrismObject<O> obj, ObjectFilter filter, boolean expected) throws SchemaException {
-    	ObjectQuery query = new ObjectQuery();
-		query.setFilter(filter);
-		boolean actual = repositoryService.matchObject(obj, query);
-		assertEquals("Wrong match for "+obj+" and "+filter, expected, actual);
-    }
 
 	@SuppressWarnings({"unchecked"})
     @Test

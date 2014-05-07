@@ -23,6 +23,7 @@ import com.evolveum.midpoint.notifications.helpers.CategoryFilterHelper;
 import com.evolveum.midpoint.notifications.helpers.ChainHelper;
 import com.evolveum.midpoint.notifications.helpers.ExpressionFilterHelper;
 import com.evolveum.midpoint.notifications.helpers.ForkHelper;
+import com.evolveum.midpoint.notifications.helpers.KindIntentFilterHelper;
 import com.evolveum.midpoint.notifications.helpers.OperationFilterHelper;
 import com.evolveum.midpoint.notifications.helpers.StatusFilterHelper;
 import com.evolveum.midpoint.notifications.notifiers.AccountPasswordNotifier;
@@ -36,12 +37,14 @@ import com.evolveum.midpoint.task.api.Task;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.EventHandlerType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.GeneralNotifierType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.EventHandlerType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.GeneralNotifierType;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+
 import java.util.List;
 
 /**
@@ -64,6 +67,9 @@ public class AggregatedEventHandler extends BaseHandler {
 
     @Autowired
     private StatusFilterHelper statusFilter;
+
+    @Autowired
+    private KindIntentFilterHelper kindIntentFilter;
 
     @Autowired
     private ExpressionFilterHelper expressionFilter;
@@ -107,6 +113,7 @@ public class AggregatedEventHandler extends BaseHandler {
                 categoryFilter.processEvent(event, eventHandlerType, notificationManager, task, result) &&
                 operationFilter.processEvent(event, eventHandlerType, notificationManager, task, result) &&
                 statusFilter.processEvent(event, eventHandlerType, notificationManager, task, result) &&
+                kindIntentFilter.processEvent(event, eventHandlerType, notificationManager, task, result) &&
                 expressionFilter.processEvent(event, eventHandlerType, notificationManager, task, result) &&
                 chainHelper.processEvent(event, eventHandlerType, notificationManager, task, result) &&
                 forkHelper.processEvent(event, eventHandlerType, notificationManager, task, result);

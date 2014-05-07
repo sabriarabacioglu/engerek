@@ -36,7 +36,7 @@ import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.prism.xml.ns._public.types_2.RawType;
+import com.evolveum.prism.xml.ns._public.types_3.RawType;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
@@ -350,6 +350,9 @@ public class PrismContext {
      * Parses (almost) anything: either an item with a definition, or an atomic (i.e. property-like) value.
      * Does not care for schemaless items!
      *
+     * CAUTION: EXPERIMENTAL - Avoid using this method if at all possible.
+     * Its result is not well defined, namely, whether it returns Item or a value.
+     *
      * @param node
      * @return either Item or an unmarshalled bean value
      * @throws SchemaException
@@ -358,6 +361,12 @@ public class PrismContext {
         XNode xnode = parseToXNode(dataString, language);
         return xnodeProcessor.parseAnyData(xnode);
     }
+
+    public Object parseAnyData(File file) throws SchemaException, IOException {
+        XNode xnode = parseToXNode(file);
+        return xnodeProcessor.parseAnyData(xnode);
+    }
+
     //endregion
 
     //region Parsing to XNode
@@ -552,6 +561,14 @@ public class PrismContext {
      */
     public RawType toRawType(Item item) throws SchemaException {
         RootXNode rootXNode = xnodeProcessor.serializeItemAsRoot(item);
-        return new RawType(rootXNode);
+        return new RawType(rootXNode, this);
+    }
+
+    public <T extends Objectable> PrismObject<T> createObject(Class<T> clazz) {
+        PrismObjectDefinition definition = schemaRegistry.findObjectDefinitionByCompileTimeClass(clazz);
+        if (definition == null) {
+            throw new IllegalStateException("Definition for prism object holding " + clazz + " couldn't be found");
+        }
+        return definition.instantiate();
     }
 }

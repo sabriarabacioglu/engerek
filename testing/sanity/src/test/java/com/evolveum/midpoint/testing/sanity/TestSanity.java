@@ -50,12 +50,11 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.Holder;
 
 import com.evolveum.midpoint.prism.PrismContext;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.SelectorQualifiedGetOptionsType;
-import com.evolveum.prism.xml.ns._public.types_2.EncryptedDataType;
-import com.evolveum.prism.xml.ns._public.types_2.ItemPathType;
-import com.evolveum.prism.xml.ns._public.types_2.ProtectedStringType;
 
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ObjectDeltaOperationListType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectDeltaOperationType;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.Validate;
 import org.opends.server.core.ModifyOperation;
 import org.opends.server.protocols.internal.InternalSearchOperation;
 import org.opends.server.types.Attribute;
@@ -145,44 +144,48 @@ import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ObjectDeltaListType;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ObjectListType;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.PropertyReferenceListType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AssignmentPolicyEnforcementType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.CapabilityCollectionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.GenericObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ModelExecuteOptionsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectTemplateType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OperationResultStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OperationResultType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ProjectionPolicyType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceObjectShadowChangeDescriptionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceObjectTypeDefinitionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.RoleType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SchemaHandlingType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowKindType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemConfigurationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemObjectsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TaskType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
-import com.evolveum.midpoint.xml.ns._public.common.fault_1.ObjectAlreadyExistsFaultType;
-import com.evolveum.midpoint.xml.ns._public.common.fault_1_wsdl.FaultMessage;
-import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ActivationCapabilityType;
-import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.CredentialsCapabilityType;
-import com.evolveum.prism.xml.ns._public.query_2.PagingType;
-import com.evolveum.prism.xml.ns._public.query_2.QueryType;
-import com.evolveum.prism.xml.ns._public.types_2.ChangeTypeType;
-import com.evolveum.prism.xml.ns._public.types_2.ItemDeltaType;
-import com.evolveum.prism.xml.ns._public.types_2.ModificationTypeType;
-import com.evolveum.prism.xml.ns._public.types_2.ObjectDeltaType;
-import com.evolveum.prism.xml.ns._public.types_2.ObjectDeltaType.ObjectToAdd;
-import com.evolveum.prism.xml.ns._public.types_2.RawType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ObjectDeltaListType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ObjectListType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.PropertyReferenceListType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.SelectorQualifiedGetOptionsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AssignmentPolicyEnforcementType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.CapabilityCollectionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConnectorType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.GenericObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ModelExecuteOptionsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectTemplateType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OperationResultStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OperationResultType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ProjectionPolicyType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceObjectShadowChangeDescriptionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceObjectTypeDefinitionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.RoleType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SchemaHandlingType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowKindType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemObjectsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.fault_3.FaultMessage;
+import com.evolveum.midpoint.xml.ns._public.common.fault_3.ObjectAlreadyExistsFaultType;
+import com.evolveum.midpoint.xml.ns._public.resource.capabilities_3.ActivationCapabilityType;
+import com.evolveum.midpoint.xml.ns._public.resource.capabilities_3.CredentialsCapabilityType;
+import com.evolveum.prism.xml.ns._public.query_3.PagingType;
+import com.evolveum.prism.xml.ns._public.query_3.QueryType;
+import com.evolveum.prism.xml.ns._public.types_3.ChangeTypeType;
+import com.evolveum.prism.xml.ns._public.types_3.EncryptedDataType;
+import com.evolveum.prism.xml.ns._public.types_3.ItemDeltaType;
+import com.evolveum.prism.xml.ns._public.types_3.ItemPathType;
+import com.evolveum.prism.xml.ns._public.types_3.ModificationTypeType;
+import com.evolveum.prism.xml.ns._public.types_3.ObjectDeltaType;
+import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
+import com.evolveum.prism.xml.ns._public.types_3.RawType;
+import com.evolveum.prism.xml.ns._public.types_3.ObjectDeltaType.ObjectToAdd;
 
 /**
  * Sanity test suite.
@@ -718,10 +721,34 @@ public class TestSanity extends AbstractModelIntegrationTest {
     	objectDelta.setObjectType(type);
     	objectDelta.setChangeType(ChangeTypeType.ADD);
     	deltaList.getDelta().add(objectDelta);
-    	resultHolder.value = modelWeb.executeChanges(deltaList, options);
-    	
-//    	return oid;
-//        throw new UnsupportedOperationException("Implement later");
+    	ObjectDeltaOperationListType objectDeltaOperationListType = modelWeb.executeChanges(deltaList, options);
+        ObjectDeltaOperationType objectDeltaOperationType = getOdoFromDeltaOperationList(objectDeltaOperationListType, objectDelta);
+        resultHolder.value = objectDeltaOperationType.getExecutionResult();
+        oidHolder.value = ((ObjectType) objectDeltaOperationType.getObjectDelta().getObjectToAdd()).getOid();
+    }
+
+    // ugly hack...
+    private static ObjectDeltaOperationType getOdoFromDeltaOperationList(ObjectDeltaOperationListType operationListType, ObjectDeltaType originalDelta) {
+        Validate.notNull(operationListType);
+        Validate.notNull(originalDelta);
+        for (ObjectDeltaOperationType operationType : operationListType.getDeltaOperation()) {
+            ObjectDeltaType objectDeltaType = operationType.getObjectDelta();
+            if (originalDelta.getChangeType() == ChangeTypeType.ADD) {
+                if (objectDeltaType.getChangeType() == originalDelta.getChangeType() &&
+                    objectDeltaType.getObjectToAdd() != null) {
+                    ObjectType objectAdded = (ObjectType) objectDeltaType.getObjectToAdd();
+                    if (objectAdded.getClass().equals(originalDelta.getObjectToAdd().getClass())) {
+                        return operationType;
+                    }
+                }
+            } else {
+                if (objectDeltaType.getChangeType() == originalDelta.getChangeType() &&
+                        originalDelta.getOid().equals(objectDeltaType.getOid())) {
+                    return operationType;
+                }
+            }
+        }
+        throw new IllegalStateException("No suitable ObjectDeltaOperationType found");
     }
 
     private void checkRepoDerbyResource() throws ObjectNotFoundException, SchemaException {
@@ -1114,7 +1141,8 @@ public class TestSanity extends AbstractModelIntegrationTest {
 //    	objectDelta.setOid(oid);
 //    	objectDelta.setObjectType(typeQName);
     	deltaList.getDelta().add(objectChange);
-    	return modelWeb.executeChanges(deltaList, null);
+    	ObjectDeltaOperationListType list = modelWeb.executeChanges(deltaList, null);
+        return getOdoFromDeltaOperationList(list, objectChange).getExecutionResult();
     }
 
     /**
@@ -1834,8 +1862,8 @@ public class TestSanity extends AbstractModelIntegrationTest {
     	objectDelta.setObjectType(typeQName);
     	objectDelta.setChangeType(ChangeTypeType.DELETE);
     	deltaList.getDelta().add(objectDelta);
-    	return modelWeb.executeChanges(deltaList, null);
-//        throw new UnsupportedOperationException("Implement later");
+    	ObjectDeltaOperationListType list = modelWeb.executeChanges(deltaList, null);
+        return getOdoFromDeltaOperationList(list, objectDelta).getExecutionResult();
     }
 
     @Test

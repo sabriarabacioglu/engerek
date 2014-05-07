@@ -48,8 +48,8 @@ import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.*;
-import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
+import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.ObjectUtils;
@@ -1844,10 +1844,5 @@ public class SqlRepositoryServiceImpl extends SqlBaseService implements Reposito
         }
 
         throw new SystemException("isAnySubordinateAttempt failed somehow, this really should not happen.");
-    }
-
-	@Override
-    public <T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectQuery query) throws SchemaException {
-        throw new NotImplementedException("Not yet implemented.");
     }
 }

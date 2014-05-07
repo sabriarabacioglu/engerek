@@ -85,26 +85,26 @@ import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.exception.TunnelException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AttributeFetchStrategyType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AvailabilityStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ExpressionReturnMultiplicityType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ProvisioningOperationTypeType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ProvisioningScriptArgumentType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ProvisioningScriptHostType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OperationProvisioningScriptType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OperationProvisioningScriptsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceObjectAssociationDirectionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceObjectAssociationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowAssociationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowAttributesType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowKindType;
-import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ActivationCapabilityType;
-import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.ActivationStatusCapabilityType;
-import com.evolveum.midpoint.xml.ns._public.resource.capabilities_2.CredentialsCapabilityType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AttributeFetchStrategyType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AvailabilityStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ExpressionReturnMultiplicityType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OperationProvisioningScriptType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OperationProvisioningScriptsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ProvisioningOperationTypeType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ProvisioningScriptArgumentType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ProvisioningScriptHostType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceObjectAssociationDirectionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceObjectAssociationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowAssociationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowAttributesType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowKindType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.resource.capabilities_3.ActivationCapabilityType;
+import com.evolveum.midpoint.xml.ns._public.resource.capabilities_3.ActivationStatusCapabilityType;
+import com.evolveum.midpoint.xml.ns._public.resource.capabilities_3.CredentialsCapabilityType;
 
 /**
  * 
@@ -250,7 +250,7 @@ public class ResourceObjectConverter {
 
 		Collection<ResourceAttribute<?>> resourceAttributesAfterAdd = null;
 
-		if (isProtectedShadow(resource, shadowClone)) {
+		if (isProtectedShadow(resource, objectClassDefinition, shadowClone)) {
 			LOGGER.error("Attempt to add protected shadow " + shadowType + "; ignoring the request");
 			throw new SecurityViolationException("Cannot get protected shadow " + shadowType);
 		}
@@ -323,10 +323,8 @@ public class ResourceObjectConverter {
 		LOGGER.trace("Getting object identifiers");
 		Collection<? extends ResourceAttribute<?>> identifiers = ShadowUtil
 				.getIdentifiers(shadow);
-		Collection<? extends ResourceAttribute<?>> attributes = ShadowUtil
-				.getAttributes(shadow);
 
-		if (isProtectedShadow(resource, objectClassDefinition, attributes)) {
+		if (isProtectedShadow(resource, objectClassDefinition, shadow)) {
 			LOGGER.error("Attempt to delete protected resource object " + objectClassDefinition + ": "
 					+ identifiers + "; ignoring the request");
 			throw new SecurityViolationException("Cannot delete protected resource object "
@@ -391,9 +389,8 @@ public class ResourceObjectConverter {
 		Collection<Operation> operations = new ArrayList<Operation>();
 		
 		Collection<? extends ResourceAttribute<?>> identifiers = ShadowUtil.getIdentifiers(shadow);
-		Collection<? extends ResourceAttribute<?>> attributes = ShadowUtil.getAttributes(shadow);
 
-		if (isProtectedShadow(resource, objectClassDefinition, attributes)) {
+		if (isProtectedShadow(resource, objectClassDefinition, shadow)) {
 			if (hasChangesOnResource(itemDeltas)) {
 				LOGGER.error("Attempt to modify protected resource object " + objectClassDefinition + ": "
 						+ identifiers);
@@ -1012,7 +1009,7 @@ public class ResourceObjectConverter {
 			PrismObject<ShadowType> resourceObject, RefinedObjectClassDefinition objectClassDefinition, OperationResult parentResult) throws SchemaException, CommunicationException, GenericFrameworkException {
 		
 		ShadowType resourceObjectType = resourceObject.asObjectable();
-		setProtectedFlag(resourceType, resourceObject);
+		setProtectedFlag(resourceType, objectClassDefinition, resourceObject);
 		
 		// Simulated Activation
 		// FIXME??? when there are not native capabilities for activation, the
@@ -1035,8 +1032,8 @@ public class ResourceObjectConverter {
 		return resourceObject;
 	}
 	
-	public void setProtectedFlag(ResourceType resourceType, PrismObject<ShadowType> resourceObject) throws SchemaException {
-		if (isProtectedShadow(resourceType, resourceObject)) {
+	public void setProtectedFlag(ResourceType resourceType, RefinedObjectClassDefinition rOcDef, PrismObject<ShadowType> resourceObject) throws SchemaException {
+		if (isProtectedShadow(resourceType, rOcDef, resourceObject)) {
 			resourceObject.asObjectable().setProtectedObject(true);
 		}
 	}
@@ -1389,60 +1386,21 @@ public class ResourceObjectConverter {
 		}
 	}
 	
-	public boolean isProtectedShadow(ResourceType resource,
+	private boolean isProtectedShadow(ResourceType resource, RefinedObjectClassDefinition objectClassDefinition,
 			PrismObject<ShadowType> shadow) throws SchemaException {
-		ResourceAttributeContainer attributesContainer = ShadowUtil
-				.getAttributesContainer(shadow);
-		if (attributesContainer == null) {
-			return false;
-		}
-		QName objectClass = shadow.asObjectable().getObjectClass();
-		Collection<ResourceAttribute<?>> attributes = attributesContainer.getAttributes();
-		return isProtectedShadow(resource, objectClass, attributes);
-	}
-
-	public boolean isProtectedShadow(ResourceType resource,
-			ObjectClassComplexTypeDefinition objectClassDefinition,
-			Collection<? extends ResourceAttribute<?>> attributes) throws SchemaException {
-		return isProtectedShadow(resource, objectClassDefinition.getTypeName(), attributes);
-	}
-
-	private boolean isProtectedShadowChange(ResourceType resource, Change change) throws SchemaException {
-		PrismObject<ShadowType> currentShadow = change.getCurrentShadow();
-		if (currentShadow != null) {
-			return isProtectedShadow(resource, currentShadow);
-		}
-		Collection<ResourceAttribute<?>> identifiers = change.getIdentifiers();
-		return isProtectedShadow(resource, change.getObjectClassDefinition().getTypeName(), identifiers);
-	}
-
-	private boolean isProtectedShadow(ResourceType resource, QName objectClass,
-			Collection<? extends ResourceAttribute<?>> attributes) throws SchemaException {
-		// TODO: support also other types except account
-		RefinedResourceSchema refinedSchema = RefinedResourceSchema.getRefinedSchema(resource, prismContext);
-		// HACK FIXME
-		RefinedObjectClassDefinition refinedAccountDef = refinedSchema
-				.findRefinedDefinitionByObjectClassQName(ShadowKindType.ACCOUNT, objectClass);
 		boolean isProtected = false;
-		if (refinedAccountDef == null) {
+		if (objectClassDefinition == null) {
 			isProtected = false;
 		} else {
-			Collection<ResourceObjectPattern> protectedAccountPatterns = refinedAccountDef.getProtectedObjectPatterns();
+			Collection<ResourceObjectPattern> protectedAccountPatterns = objectClassDefinition.getProtectedObjectPatterns();
 			if (protectedAccountPatterns == null) {
 				isProtected = false;
 			} else {
-				isProtected = ResourceObjectPattern.matches(attributes, protectedAccountPatterns, matchingRuleRegistry);
+				isProtected = ResourceObjectPattern.matches(shadow, protectedAccountPatterns, matchingRuleRegistry);
 			}
 		}
-		LOGGER.trace("isProtectedShadow: {} -> {}, {} = {}", new Object[] { objectClass, refinedAccountDef,
-				attributes, isProtected });
+		LOGGER.trace("isProtectedShadow: {}: {} = {}", new Object[] { objectClassDefinition,
+				shadow, isProtected });
 		return isProtected;
 	}
-
-	private PrismObjectDefinition<ShadowType> getShadowTypeDef() {
-		if (shadowTypeDefinition == null) {
-			shadowTypeDefinition = prismContext.getSchemaRegistry().findObjectDefinitionByCompileTimeClass(ShadowType.class);
-		}
-		return shadowTypeDefinition;
-	}	
 }

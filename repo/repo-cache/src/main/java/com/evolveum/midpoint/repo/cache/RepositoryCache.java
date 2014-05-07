@@ -40,12 +40,12 @@ import com.evolveum.midpoint.util.exception.ObjectNotFoundException;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.CleanupPolicyType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TaskType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.CleanupPolicyType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
 
 /**
  * Read-through write-through per-session repository cache.
@@ -303,12 +303,6 @@ public class RepositoryCache implements RepositoryService {
 		if (cache != null) {
 			cache.put(object.getOid(), (PrismObject<ObjectType>) object.clone());
 		}
-	}
-
-	@Override
-	public <T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectQuery query)
-			throws SchemaException {
-		return repository.matchObject(object, query);
 	}
 
 	@Override

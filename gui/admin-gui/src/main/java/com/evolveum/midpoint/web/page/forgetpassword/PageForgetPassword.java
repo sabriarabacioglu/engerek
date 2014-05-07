@@ -33,6 +33,7 @@ import com.evolveum.midpoint.web.page.admin.home.dto.PasswordAccountDto;
 import com.evolveum.midpoint.web.page.forgetpassword.dto.ForgetPasswordDto;
 import com.evolveum.midpoint.web.security.MidPointAuthWebSession;
 import com.evolveum.midpoint.web.security.SecurityUtils;
+import com.evolveum.midpoint.web.util.OnePageParameterEncoder;
 import com.evolveum.midpoint.web.util.WebMiscUtil;
 import com.evolveum.midpoint.web.util.WebModelUtils;
 import com.evolveum.midpoint.schema.GetOperationOptions;
@@ -68,6 +69,7 @@ import org.apache.wicket.markup.html.form.PasswordTextField;
 import org.apache.wicket.markup.html.form.RequiredTextField;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -123,7 +125,11 @@ public class PageForgetPassword extends PageBase {
             	if(user!=null){
                 	//If the parameters are ok reset the password
                     System.out.println("Reset Password User var.");
-                	resetPassword(user);
+                    PageParameters parameters = new PageParameters();
+                    parameters.add(PageForgetPasswordQuestions.PARAM_OBJECT_ID, user.getOid());
+                    setResponsePage(PageForgetPasswordQuestions.class, parameters);
+                   
+                   
                 	
                 	
                 }

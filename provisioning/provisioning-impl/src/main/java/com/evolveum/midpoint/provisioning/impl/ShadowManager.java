@@ -73,10 +73,10 @@ import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FailedOperationTypeType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FailedOperationTypeType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 
 /**
  * Responsibilities:
@@ -575,11 +575,9 @@ public class ShadowManager {
 
 		ShadowType repoShadowType = repoShadow.asObjectable();
 
-		if (repoShadowType.getKind() == null) {
-			repoShadowType.setKind(objectClassDefinition.getKind());
-		}
+        setKindIfNecessary(repoShadowType, objectClassDefinition);
 
-		// We don't want to store credentials in the repo
+        // We don't want to store credentials in the repo
 		repoShadowType.setCredentials(null);
 
 		// additional check if the shadow doesn't contain resource, if yes,
@@ -607,8 +605,14 @@ public class ShadowManager {
 
 		return repoShadow;
 	}
-	
-	private void normalizeAttributes(PrismObject<ShadowType> shadow, RefinedObjectClassDefinition objectClassDefinition) throws SchemaException {
+
+    public void setKindIfNecessary(ShadowType repoShadowType, RefinedObjectClassDefinition objectClassDefinition) {
+        if (repoShadowType.getKind() == null && objectClassDefinition != null) {
+            repoShadowType.setKind(objectClassDefinition.getKind());
+        }
+    }
+
+    private void normalizeAttributes(PrismObject<ShadowType> shadow, RefinedObjectClassDefinition objectClassDefinition) throws SchemaException {
 		for (ResourceAttribute<?> attribute: ShadowUtil.getAttributes(shadow)) {
 			RefinedAttributeDefinition rAttrDef = objectClassDefinition.findAttributeDefinition(attribute.getElementName());
 			normalizeAttribute(attribute, rAttrDef);			

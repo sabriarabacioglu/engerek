@@ -44,9 +44,9 @@ import com.evolveum.midpoint.web.session.TasksStorage;
 import com.evolveum.midpoint.web.util.ObjectTypeGuiDescriptor;
 import com.evolveum.midpoint.web.util.OnePageParameterEncoder;
 import com.evolveum.midpoint.web.util.WebMiscUtil;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.NodeType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TaskType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.NodeType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DurationFormatUtils;
@@ -151,14 +151,12 @@ public class PageTasks extends PageAdminTasks {
         TaskDtoProvider provider = new TaskDtoProvider(PageTasks.this, options);
 
         provider.setQuery(createTaskQuery());
-        TablePanel<TaskDto> taskTable = new TablePanel<TaskDto>(ID_TASK_TABLE, provider,
-                taskColumns);
+        TablePanel<TaskDto> taskTable = new TablePanel<>(ID_TASK_TABLE, provider, taskColumns);
         taskTable.setOutputMarkupId(true);
         mainForm.add(taskTable);
 
         List<IColumn<NodeDto, String>> nodeColumns = initNodeColumns();
-        TablePanel nodeTable = new TablePanel<NodeDto>(ID_NODE_TABLE, new NodeDtoProvider(PageTasks.this),
-                nodeColumns);
+        TablePanel nodeTable = new TablePanel<>(ID_NODE_TABLE, new NodeDtoProvider(PageTasks.this), nodeColumns);
         nodeTable.setOutputMarkupId(true);
         nodeTable.setShowPaging(false);
         mainForm.add(nodeTable);

@@ -39,11 +39,11 @@ import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.RoleType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemConfigurationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemObjectsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TaskType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.RoleType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemObjectsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.testng.IHookCallBack;
@@ -217,11 +217,11 @@ public class AbstractConfiguredModelIntegrationTest extends AbstractModelIntegra
 	protected static final String USER_DRAKE_USERNAME = "drake";
 	
 	public static final File ACCOUNT_JACK_DUMMY_FILE = new File(COMMON_DIR, "account-jack-dummy.xml");
-	public static final String ACCOUNT_JACK_DUMMY_RED_FILENAME = COMMON_DIR_NAME + "/account-jack-dummy-red.xml";
+	public static final File ACCOUNT_JACK_DUMMY_RED_FILE = new File(COMMON_DIR, "account-jack-dummy-red.xml");
 	public static final String ACCOUNT_JACK_DUMMY_USERNAME = "jack";
 	public static final String ACCOUNT_JACK_DUMMY_FULLNAME = "Jack Sparrow";
 	
-	public static final String ACCOUNT_HERMAN_DUMMY_FILENAME = COMMON_DIR_NAME + "/account-herman-dummy.xml";
+	public static final File ACCOUNT_HERMAN_DUMMY_FILE = new File(COMMON_DIR, "account-herman-dummy.xml");
 	public static final String ACCOUNT_HERMAN_DUMMY_OID = "22220000-2200-0000-0000-444400004444";
 	public static final String ACCOUNT_HERMAN_DUMMY_USERNAME = "ht";
 	
@@ -231,7 +231,7 @@ public class AbstractConfiguredModelIntegrationTest extends AbstractModelIntegra
 	public static final String ACCOUNT_SHADOW_GUYBRUSH_DUMMY_FILENAME = COMMON_DIR_NAME + "/account-shadow-guybrush-dummy.xml";
 	public static final String ACCOUNT_SHADOW_GUYBRUSH_OID = "22226666-2200-6666-6666-444400004444";
 	public static final String ACCOUNT_GUYBRUSH_DUMMY_USERNAME = "guybrush";
-	public static final String ACCOUNT_GUYBRUSH_DUMMY_FILENAME = COMMON_DIR_NAME + "/account-guybrush-dummy.xml";
+	public static final File ACCOUNT_GUYBRUSH_DUMMY_FILE = new File (COMMON_DIR, "account-guybrush-dummy.xml");
 	public static final String ACCOUNT_GUYBRUSH_DUMMY_RED_FILENAME = COMMON_DIR_NAME + "/account-guybrush-dummy-red.xml";
 	
 	public static final String ACCOUNT_SHADOW_JACK_DUMMY_FILENAME = COMMON_DIR_NAME + "/account-shadow-jack-dummy.xml";

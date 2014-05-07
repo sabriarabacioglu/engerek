@@ -32,9 +32,9 @@ import com.evolveum.midpoint.util.DebugDumpable;
 import com.evolveum.midpoint.util.DebugUtil;
 import com.evolveum.midpoint.util.PrettyPrinter;
 import com.evolveum.midpoint.util.exception.SchemaException;
-import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
-import com.evolveum.prism.xml.ns._public.types_2.RawType;
-import com.evolveum.prism.xml.ns._public.types_2.SchemaDefinitionType;
+import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
+import com.evolveum.prism.xml.ns._public.types_3.RawType;
+import com.evolveum.prism.xml.ns._public.types_3.SchemaDefinitionType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -42,6 +42,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.w3c.dom.Element;
+
+import javax.xml.bind.JAXBElement;
 
 /**
  * @author lazyman
@@ -587,4 +589,18 @@ public class PrismPropertyValue<T> extends PrismValue implements DebugDumpable, 
 		return PrettyPrinter.prettyPrint(value);
 	}
 
+    /**
+     * Returns JAXBElement corresponding to the this value.
+     * Name of the element is the name of parent property; its value is the real value of the property.
+     *
+     * @return Created JAXBElement.
+     */
+    public JAXBElement<T> toJaxbElement() {
+        Itemable parent = getParent();
+        if (parent == null) {
+            throw new IllegalStateException("Couldn't represent parent-less property value as a JAXBElement");
+        }
+        Object realValue = getValue();
+        return new JAXBElement<>(parent.getElementName(), (Class) realValue.getClass(), (T) realValue);
+    }
 }

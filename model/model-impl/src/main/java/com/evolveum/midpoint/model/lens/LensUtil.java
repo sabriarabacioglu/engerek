@@ -75,31 +75,31 @@ import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AbstractRoleType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AssignmentType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ExpressionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.GenerateExpressionEvaluatorType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.IterationSpecificationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.LayerType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.MappingStrengthType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.MappingType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectTemplateType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceObjectTypeDefinitionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ScriptExpressionReturnTypeType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowKindType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.StringPolicyType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemConfigurationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemObjectsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TimeIntervalStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ValuePolicyType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AbstractRoleType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AssignmentType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ExpressionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.GenerateExpressionEvaluatorType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.IterationSpecificationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.LayerType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.MappingStrengthType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.MappingType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectTemplateType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.PasswordType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceObjectTypeDefinitionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ScriptExpressionReturnTypeType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowKindType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.StringPolicyType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemObjectsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TimeIntervalStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ValuePolicyType;
 
 /**
  * @author semancik
@@ -194,7 +194,7 @@ public class LensUtil {
 	 */
 	public static <V extends PrismValue, I extends ItemValueWithOrigin<V>> ItemDelta<V> consolidateTripleToDelta(ItemPath itemPath, 
     		DeltaSetTriple<I> triple, ItemDefinition itemDefinition, 
-    		ItemDelta<V> aprioriItemDelta, PrismContainer<?> itemContainer, ValueMatcher<?> valueMatcher,
+    		ItemDelta<V> aprioriItemDelta, PrismContainer<?> itemContainer, ValueMatcher<?> valueMatcher, Comparator<V> comparator,
     		boolean addUnchangedValues, boolean filterExistingValues, boolean isExclusiveStrong, 
     		String contextDescription, boolean applyWeak) throws ExpressionEvaluationException, PolicyViolationException, SchemaException {
     			
@@ -232,6 +232,7 @@ public class LensUtil {
         // a single item (e.g. attribute). But this loop iterates over every potential value of that item.
         for (V value : allValues) {
         	
+        	LOGGER.trace("item existing: {}, value: {}", itemExisting, value);
         	// Check what to do with the value using the usual "triple routine". It means that if a value is
         	// in zero set than we need no delta, plus set means add delta and minus set means delete delta.
         	// The first set that the value is present determines the result.
@@ -320,7 +321,7 @@ public class LensUtil {
                     		"skipping adding in {}", new Object[]{value, itemPath, contextDescription});
                     continue;
                 }
-                if (filterExistingValues && hasValue(itemExisting, value, valueMatcher)) {
+                if (filterExistingValues && hasValue(itemExisting, value, valueMatcher, comparator)) {
                 	LOGGER.trace("Value {} NOT added to delta for item {} because the item already has that value in {}",
                 			new Object[]{value, itemPath, contextDescription});
                 	continue;
@@ -374,7 +375,7 @@ public class LensUtil {
                     		new Object[]{value, itemPath, contextDescription});
                     continue;
                 }
-                if (filterExistingValues && !hasValue(itemExisting, value, valueMatcher)) {
+                if (filterExistingValues && !hasValue(itemExisting, value, valueMatcher, comparator)) {
                 	LOGGER.trace("Value {} NOT deleted to delta for item {} the item does not have that value in {}",
                 			new Object[]{value, itemPath, contextDescription});
                 	continue;
@@ -470,14 +471,14 @@ public class LensUtil {
 		return values;
 	}
 	
-	private static <V extends PrismValue> boolean hasValue(Item<V> existingUserItem, V newValue, ValueMatcher<?> valueMatcher) {
+	private static <V extends PrismValue> boolean hasValue(Item<V> existingUserItem, V newValue, ValueMatcher<?> valueMatcher, Comparator<V> comparator) {
 		if (existingUserItem == null) {
 			return false;
 		}
 		if (valueMatcher != null && newValue instanceof PrismPropertyValue) {
 			return valueMatcher.hasRealValue((PrismProperty)existingUserItem, (PrismPropertyValue)newValue);
 		} else {
-			return existingUserItem.contains(newValue, true);
+			return existingUserItem.contains(newValue, true, comparator);
 		}
 	}
 	

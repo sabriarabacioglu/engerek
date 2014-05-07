@@ -101,33 +101,33 @@ import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AssignmentType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AuthorizationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConstructionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.CredentialsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectSynchronizationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectTypeTemplateType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OrgType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.RoleType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowKindType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SynchronizationSituationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SynchronizationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemConfigurationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemObjectsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TaskExecutionStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TaskType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TriggerType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
-import com.evolveum.midpoint.xml.ns._public.model.model_1_wsdl.ModelPortType;
-import com.evolveum.prism.xml.ns._public.types_2.ProtectedStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AssignmentType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AuthorizationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConstructionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.CredentialsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectSynchronizationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectTypeTemplateType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OrgType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.PasswordType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.RoleType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowKindType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SynchronizationSituationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SynchronizationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemObjectsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskExecutionStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TriggerType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
+import com.evolveum.midpoint.xml.ns._public.model.model_3.ModelPortType;
+import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
 
 import org.apache.commons.lang.StringUtils;
 import org.opends.server.types.DirectoryException;
@@ -908,6 +908,14 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
 		modifications.add(createAssignmentModification(resourceOid, kind, intent, add));
 		ObjectDelta<F> userDelta = ObjectDelta.createModifyDelta(focusOid, modifications, type, prismContext);
 		return userDelta;
+	}
+	
+	protected void assignAccount(String userOid, String resourceOid, String intent) throws SchemaException, ObjectAlreadyExistsException, ObjectNotFoundException, ExpressionEvaluationException, CommunicationException, ConfigurationException, PolicyViolationException, SecurityViolationException {
+		Task task = taskManager.createTaskInstance(AbstractModelIntegrationTest.class+".assignAccount");
+		OperationResult result = task.getResult();
+		assignAccount(userOid, resourceOid, intent, task, result);
+		result.computeStatus();
+		TestUtil.assertSuccess(result);
 	}
 	
 	protected void assignAccount(String userOid, String resourceOid, String intent, Task task, OperationResult result) throws SchemaException, ObjectAlreadyExistsException, ObjectNotFoundException, ExpressionEvaluationException, CommunicationException, ConfigurationException, PolicyViolationException, SecurityViolationException {
@@ -2519,5 +2527,18 @@ public abstract class AbstractModelIntegrationTest extends AbstractIntegrationTe
         modelService.executeChanges(MiscSchemaUtil.createCollection(roleDelta), null, task, result);
         result.computeStatus();
         TestUtil.assertSuccess(result);
+	}
+	
+	protected void modifyUserAddAccount(String userOid, File accountFile, Task task, OperationResult result) throws SchemaException, IOException, ObjectAlreadyExistsException, ObjectNotFoundException, ExpressionEvaluationException, CommunicationException, ConfigurationException, PolicyViolationException, SecurityViolationException {
+		PrismObject<ShadowType> account = PrismTestUtil.parseObject(accountFile);
+        
+        ObjectDelta<UserType> userDelta = ObjectDelta.createEmptyModifyDelta(UserType.class, userOid, prismContext);
+        PrismReferenceValue accountRefVal = new PrismReferenceValue();
+		accountRefVal.setObject(account);
+		ReferenceDelta accountDelta = ReferenceDelta.createModificationAdd(UserType.F_LINK_REF, getUserDefinition(), accountRefVal);
+		userDelta.addModification(accountDelta);
+		Collection<ObjectDelta<? extends ObjectType>> deltas = (Collection)MiscUtil.createCollection(userDelta);
+        
+		modelService.executeChanges(deltas, null, task, result);
 	}
 }
