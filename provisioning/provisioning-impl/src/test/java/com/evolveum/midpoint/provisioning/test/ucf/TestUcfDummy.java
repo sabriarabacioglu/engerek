@@ -91,13 +91,13 @@ import com.evolveum.midpoint.util.exception.ObjectNotFoundException;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorConfigurationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowKindType;
-import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConnectorConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConnectorType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowKindType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 
 /**
  * Simple UCF tests. No real resource, just basic setup and sanity.
@@ -222,7 +222,8 @@ public class TestUcfDummy extends AbstractTestNGSpringContextTests {
 		// Try to re-parse
 		PrismSchema reparsedConnectorSchema = PrismSchema.parse(DOMUtil.getFirstChildElement(xsdSchemaDom), true, "schema fetched from "+cc, PrismTestUtil.getPrismContext());
 		ProvisioningTestUtil.assertConnectorSchemaSanity(reparsedConnectorSchema, "re-parsed");
-		assertEquals("Unexpected number of definitions in re-parsed schema", 3, reparsedConnectorSchema.getDefinitions().size());		
+		// TODO: 3 definitions would be cleaner. But we can live with this
+		assertEquals("Unexpected number of definitions in re-parsed schema", 6, reparsedConnectorSchema.getDefinitions().size());		
 	}
 	
 	/**

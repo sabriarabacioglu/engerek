@@ -43,7 +43,7 @@ import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.*;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -209,6 +209,9 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 	@Override
 	public <F extends FocusType> PrismObject<F> resolveOwner(PrismObject<ShadowType> shadow) {
+		if (shadow == null || shadow.getOid() == null) {
+			return null;
+		}
 		PrismObject<F> owner;
 		try {
 			owner = repositoryService.searchShadowOwner(shadow.getOid(), new OperationResult(UserProfileServiceImpl.class+".resolveOwner"));

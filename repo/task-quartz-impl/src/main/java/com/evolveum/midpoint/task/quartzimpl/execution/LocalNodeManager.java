@@ -26,8 +26,9 @@ import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.LoggingUtils;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.NodeErrorStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.NodeExecutionStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.NodeErrorStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.NodeExecutionStatusType;
+
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
@@ -408,16 +409,18 @@ public class LocalNodeManager {
 
         for (JobExecutionContext jec : jecs) {
             String oid = jec.getJobDetail().getKey().getName();
+            OperationResult result1 = result.createSubresult(LocalNodeManager.class.getName() + ".getLocallyRunningTask");
             try {
-                retval.add(taskManager.getTask(oid, result));
+                retval.add(taskManager.getTask(oid, result1));
+                result1.recordSuccess();
             } catch (ObjectNotFoundException e) {
                 String m = "Cannot get the task with OID " + oid + " as it no longer exists";
                 LoggingUtils.logException(LOGGER, m, e);
-                result.createSubresult(LocalNodeManager.class.getName() + ".getLocallyRunningTask").recordFatalError(m, e);
+                result1.recordHandledError(m, e);               // it's OK, the task could disappear in the meantime
             } catch (SchemaException e) {
                 String m = "Cannot get the task with OID " + oid + " due to schema problems";
                 LoggingUtils.logException(LOGGER, m, e);
-                result.createSubresult(LocalNodeManager.class.getName() + ".getLocallyRunningTask").recordFatalError(m, e);
+                result1.recordFatalError(m, e);
             }
         }
 

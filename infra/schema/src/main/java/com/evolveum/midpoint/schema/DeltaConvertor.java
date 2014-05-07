@@ -23,8 +23,6 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.namespace.QName;
 
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ObjectDeltaListType;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -53,15 +51,16 @@ import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.util.DOMUtil;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SystemException;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ObjectModificationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectDeltaOperationType;
-import com.evolveum.prism.xml.ns._public.types_2.ChangeTypeType;
-import com.evolveum.prism.xml.ns._public.types_2.ItemDeltaType;
-import com.evolveum.prism.xml.ns._public.types_2.ItemPathType;
-import com.evolveum.prism.xml.ns._public.types_2.ModificationTypeType;
-import com.evolveum.prism.xml.ns._public.types_2.ObjectDeltaType;
-import com.evolveum.prism.xml.ns._public.types_2.ObjectType;
-import com.evolveum.prism.xml.ns._public.types_2.RawType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ObjectDeltaListType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ObjectModificationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectDeltaOperationType;
+import com.evolveum.prism.xml.ns._public.types_3.ChangeTypeType;
+import com.evolveum.prism.xml.ns._public.types_3.ItemDeltaType;
+import com.evolveum.prism.xml.ns._public.types_3.ItemPathType;
+import com.evolveum.prism.xml.ns._public.types_3.ModificationTypeType;
+import com.evolveum.prism.xml.ns._public.types_3.ObjectDeltaType;
+import com.evolveum.prism.xml.ns._public.types_3.ObjectType;
+import com.evolveum.prism.xml.ns._public.types_3.RawType;
 
 /**
  * @author semancik
@@ -97,6 +96,9 @@ public class DeltaConvertor {
             PrismContext prismContext) throws SchemaException {
     	
     	QName objectType = objectDeltaType.getObjectType();
+        if (objectType == null) {
+            throw new SchemaException("No objectType specified");
+        }
     	PrismObjectDefinition<T> objDef = prismContext.getSchemaRegistry().findObjectDefinitionByType(objectType);
     	Class<T> type = objDef.getCompileTimeClass();
 
@@ -379,7 +381,7 @@ public class DeltaConvertor {
 //	            modValue.getContent().add(xmlValue);
 //	            mod.getValue().add(modValue);
 	        	XNode xnode = toXNode(delta, value);
-	        	RawType modValue = new RawType(xnode);
+	        	RawType modValue = new RawType(xnode, value.getPrismContext());
                 mod.getValue().add(modValue);
 	        }
         }

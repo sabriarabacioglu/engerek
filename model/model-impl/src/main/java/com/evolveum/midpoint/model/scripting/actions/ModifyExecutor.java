@@ -28,10 +28,11 @@ import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.model.scripting_2.ActionExpressionType;
-import com.evolveum.prism.xml.ns._public.types_2.ChangeTypeType;
-import com.evolveum.prism.xml.ns._public.types_2.ObjectDeltaType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.model.scripting_3.ActionExpressionType;
+import com.evolveum.prism.xml.ns._public.types_3.ChangeTypeType;
+import com.evolveum.prism.xml.ns._public.types_3.ObjectDeltaType;
+
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -76,7 +77,7 @@ public class ModifyExecutor extends BaseActionExecutor {
         if (deltaData.getData().size() != 1) {
             throw new ScriptExecutionException("Expected exactly one delta to apply, found "  + deltaData.getData().size() + " instead.");
         }
-        ObjectDeltaType deltaType = ((PrismProperty<ObjectDeltaType>) deltaData.getData().get(0)).getRealValue();
+        ObjectDeltaType deltaType = ((PrismProperty<ObjectDeltaType>) deltaData.getData().get(0)).getAnyRealValue();
         if (deltaType.getChangeType() == null) {
             deltaType.setChangeType(ChangeTypeType.MODIFY);
         }

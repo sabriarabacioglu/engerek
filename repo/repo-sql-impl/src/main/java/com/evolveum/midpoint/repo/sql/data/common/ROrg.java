@@ -22,11 +22,14 @@ import com.evolveum.midpoint.repo.sql.util.DtoTranslationException;
 import com.evolveum.midpoint.repo.sql.util.RUtil;
 import com.evolveum.midpoint.schema.GetOperationOptions;
 import com.evolveum.midpoint.schema.SelectorOptions;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OrgType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OrgType;
+
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.ForeignKey;
+import org.hibernate.annotations.Index;
 
 import javax.persistence.*;
+
 import java.util.Collection;
 import java.util.Set;
 
@@ -45,6 +48,7 @@ public class ROrg extends RAbstractRole<OrgType> {
     private String costCenter;
     private RPolyString locality;
     private Boolean tenant;
+    private Integer displayOrder;
 
     @Embedded
     public RPolyString getName() {
@@ -81,6 +85,15 @@ public class ROrg extends RAbstractRole<OrgType> {
     @Cascade({org.hibernate.annotations.CascadeType.ALL})
     public Set<String> getOrgType() {
         return orgType;
+    }
+
+    @Index(name = "iDisplayOrder")
+    public Integer getDisplayOrder() {
+        return displayOrder;
+    }
+
+    public void setDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
     }
 
     public void setCostCenter(String costCenter) {

@@ -29,6 +29,7 @@ import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.query.ObjectPaging;
 import com.evolveum.midpoint.prism.query.ObjectQuery;
 import com.evolveum.midpoint.schema.GetOperationOptions;
+import com.evolveum.midpoint.schema.ObjectDeltaOperation;
 import com.evolveum.midpoint.schema.ObjectOperationOption;
 import com.evolveum.midpoint.schema.ResultHandler;
 import com.evolveum.midpoint.schema.SelectorOptions;
@@ -46,13 +47,13 @@ import com.evolveum.midpoint.util.exception.ObjectNotFoundException;
 import com.evolveum.midpoint.util.exception.SchemaException;
 import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.exception.SystemException;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ImportOptionsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorHostType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ImportOptionsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConnectorHostType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConnectorType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
 
 /**
  * <p>
@@ -87,6 +88,7 @@ public interface ModelService {
 	String GET_OBJECT = CLASS_NAME_WITH_DOT + "getObject";
 	String COUNT_OBJECTS = CLASS_NAME_WITH_DOT + "countObjects";
 	String EXECUTE_CHANGES = CLASS_NAME_WITH_DOT + "executeChanges";
+    String EXECUTE_CHANGE = CLASS_NAME_WITH_DOT + "executeChange";
 	String RECOMPUTE = CLASS_NAME_WITH_DOT + "recompute";
 	String GET_PROPERTY_AVAILABLE_VALUES = CLASS_NAME_WITH_DOT + "getPropertyAvailableValues";
 	String LIST_OBJECTS = CLASS_NAME_WITH_DOT + "listObjects";
@@ -101,15 +103,6 @@ public interface ModelService {
 	String DISCOVER_CONNECTORS = CLASS_NAME_WITH_DOT + "discoverConnectors";
 
 	String AUTZ_NAMESPACE = AuthorizationConstants.NS_AUTHORIZATION_MODEL;
-	String AUTZ_READ_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "read"));
-	String AUTZ_ADD_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "add"));
-	String AUTZ_MODIFY_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "modify"));
-	String AUTZ_DELETE_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "delete"));
-	String AUTZ_RECOMPUTE_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "recompute"));
-	String AUTZ_TEST_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "test"));
-	String AUTZ_IMPORT_OBJECTS_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "importObjects"));
-	String AUTZ_IMPORT_FROM_RESOURCE_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "importFromResource"));
-	String AUTZ_DISCOVER_CONNECTORS_URL = QNameUtil.qNameToUri(new QName(AUTZ_NAMESPACE, "discoverConnectors"));
 	
 	/**
 	 * <p>
@@ -205,6 +198,8 @@ public interface ModelService {
 	 *            parent OperationResult (in/out)
 	 * @param task
 	 * 			  Task instance. It gives context to the execution (e.g. security context)
+     * @return A collection of executed ObjectDeltaOperations (ObjectDelta + OperationResult). OIDs of newly created objects can be found
+     *         in these ObjectDeltas (which may or may not be original ObjectDeltas passed to the method).
 	 * @throws ObjectAlreadyExistsException
 	 *             object with specified identifiers already exists, cannot add
 	 * @throws ObjectNotFoundException
@@ -221,7 +216,7 @@ public interface ModelService {
 	 * 				Configuration error. E.g. misconfigured resource parameters, invalid policies, etc.
 	 * @throws PolicyViolationException
 	 * 				Policy violation was detected during processing of the object
-	 * @throw SecurityViolationException
+	 * @throws SecurityViolationException
 	 * 				Security violation during operation execution. May be caused either by midPoint internal
 	 * 				security mechanism but also by external mechanism (e.g. on the resource)
 	 * @throws IllegalArgumentException
@@ -229,7 +224,7 @@ public interface ModelService {
 	 * @throws SystemException
 	 *             unknown error from underlying layers or other unexpected state
 	 */
-	void executeChanges(Collection<ObjectDelta<? extends ObjectType>> deltas, ModelExecuteOptions options, Task task, OperationResult parentResult) 
+    Collection<ObjectDeltaOperation<? extends ObjectType>> executeChanges(Collection<ObjectDelta<? extends ObjectType>> deltas, ModelExecuteOptions options, Task task, OperationResult parentResult)
 			throws ObjectAlreadyExistsException, ObjectNotFoundException, SchemaException, ExpressionEvaluationException, 
 			CommunicationException, ConfigurationException, PolicyViolationException, SecurityViolationException;
 	

@@ -34,9 +34,10 @@ import com.evolveum.midpoint.repo.sql.util.RUtil;
 import com.evolveum.midpoint.util.QNameUtil;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
+
 import org.apache.commons.lang.Validate;
 import org.hibernate.Criteria;
 import org.hibernate.criterion.Criterion;
@@ -44,6 +45,7 @@ import org.hibernate.criterion.Restrictions;
 import org.hibernate.sql.JoinType;
 
 import javax.xml.namespace.QName;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -153,7 +155,7 @@ public abstract class ItemRestriction<T extends ValueFilter> extends Restriction
      * <p/>
      * Virtual definitions offer additional query params, which can be used for filtering - this method updates
      * criteria based on {@link VirtualQueryParam}. For example assignments and inducements are defined in two
-     * collections in schema ({@link com.evolveum.midpoint.xml.ns._public.common.common_2a.AbstractRoleType}),
+     * collections in schema ({@link com.evolveum.midpoint.xml.ns._public.common.common_3.AbstractRoleType}),
      * but in repository ({@link com.evolveum.midpoint.repo.sql.data.common.RAbstractRole}) they are stored in
      * single {@link java.util.Set}.
      * <p/>
@@ -332,7 +334,14 @@ public abstract class ItemRestriction<T extends ValueFilter> extends Restriction
             LessFilter lf = (LessFilter) filter;
             operation = lf.isEquals() ? ItemRestrictionOperation.LE : ItemRestrictionOperation.LT;
         } else if (filter instanceof SubstringFilter) {
-            operation = ItemRestrictionOperation.SUBSTRING;
+            SubstringFilter substring = (SubstringFilter) filter;
+            if (substring.isAnchorEnd()) {
+                operation = ItemRestrictionOperation.ENDS_WITH;
+            } else if (substring.isAnchorStart()) {
+                operation = ItemRestrictionOperation.STARTS_WITH;
+            } else {
+                operation = ItemRestrictionOperation.SUBSTRING;
+            }
         } else {
             throw new QueryException("Can't translate filter '" + filter + "' to operation.");
         }

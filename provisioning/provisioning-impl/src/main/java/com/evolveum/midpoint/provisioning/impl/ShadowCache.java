@@ -105,20 +105,20 @@ import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.exception.TunnelException;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ActivationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AvailabilityStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FailedOperationTypeType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OperationProvisioningScriptsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceObjectAssociationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowAssociationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowAttributesType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowKindType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.prism.xml.ns._public.types_2.ObjectDeltaType;
-import com.evolveum.prism.xml.ns._public.types_2.PolyStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ActivationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AvailabilityStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FailedOperationTypeType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OperationProvisioningScriptsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceObjectAssociationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowAssociationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowAttributesType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowKindType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.prism.xml.ns._public.types_3.ObjectDeltaType;
+import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 
 /**
  * Shadow cache is a facade that covers all the operations with shadows.
@@ -352,6 +352,7 @@ public abstract class ShadowCache {
 		try {
 			objectClassDefinition = determineObjectClassDefinition(shadow, resource);
 			applyAttributesDefinition(shadow, resource);
+            shadowManager.setKindIfNecessary(shadow.asObjectable(), objectClassDefinition);
 			accessChecker.checkAdd(resource, shadow, objectClassDefinition, parentResult);
 			ConnectorInstance connector = getConnectorInstance(resource, parentResult);
 			shadow = resouceObjectConverter.addResourceObject(connector, resource, shadow, objectClassDefinition, scripts, parentResult);
@@ -1259,7 +1260,7 @@ public abstract class ShadowCache {
 				return;
 			}
 
-			resouceObjectConverter.setProtectedFlag(resourceType, oldShadow);
+			resouceObjectConverter.setProtectedFlag(resourceType, refinedObjectClassDefinition, oldShadow);
 			change.setOldShadow(oldShadow);
 
 			if (change.getCurrentShadow() != null) {
@@ -1609,6 +1610,7 @@ public abstract class ShadowCache {
 					PrismObject<ShadowType> entitlementRepoShadow = lookupOrCreateShadowInRepository(connector, entitlementShadow, entitlementObjectClassDef, resource, parentResult);
 					ObjectReferenceType shadowRefType = new ObjectReferenceType();
 					shadowRefType.setOid(entitlementRepoShadow.getOid());
+					shadowRefType.setType(ShadowType.COMPLEX_TYPE);
 					shadowAssociationType.setShadowRef(shadowRefType);
 				}
 			}

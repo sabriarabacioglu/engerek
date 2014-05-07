@@ -32,12 +32,12 @@ import com.evolveum.midpoint.util.exception.ConcurrencyException;
 import com.evolveum.midpoint.util.exception.ObjectAlreadyExistsException;
 import com.evolveum.midpoint.util.exception.ObjectNotFoundException;
 import com.evolveum.midpoint.util.exception.SchemaException;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.CleanupPolicyType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.CleanupPolicyType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
 
 /**
  * <p>Identity Repository Interface.</p>
@@ -324,23 +324,6 @@ public interface RepositoryService {
 	public <T extends ObjectType> int countObjects(Class<T> type, ObjectQuery query, OperationResult parentResult)
 			throws SchemaException;
 
-	/**
-	 * Matches object to the specified search filter, returns true if the object matches or false otherwise.
-	 * This is supposed to be a very cheap operation. It actually does not use an underlying database unless it
-	 * needs to (which is usually required only for query parts related to the organizational structure).
-	 * This is very lightweight operation. Therefore also the usual operation result is omitted here. All error
-	 * conditions are communicated just by throwing the exceptions.
-	 * 
-	 * The object which is provided to this operation is assumed to be fresh (up to date).
-	 * 
-	 * @param object object to be matched
-	 * @param query search query
-	 * @return true if the object matches specified object filter or false otherwise
-	 * @throws SchemaException
-	 * 				specified object or search filter contain data that violate the schema
-	 */
-	<T extends ObjectType> boolean matchObject(PrismObject<T> object, ObjectQuery query) throws SchemaException;
-	
 	boolean isAnySubordinate(String upperOrgOid, Collection<String> lowerObjectOids) throws SchemaException;
 	
 	/**

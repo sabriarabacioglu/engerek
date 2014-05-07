@@ -30,16 +30,15 @@ import com.evolveum.midpoint.prism.PrismContext;
 import com.evolveum.midpoint.prism.PrismProperty;
 import com.evolveum.midpoint.prism.PrismPropertyDefinition;
 import com.evolveum.midpoint.prism.PrismValue;
-
 import com.evolveum.midpoint.prism.parser.XNodeProcessor;
 import com.evolveum.midpoint.prism.xnode.XNode;
 import com.evolveum.midpoint.schema.constants.SchemaConstants;
 import com.evolveum.midpoint.util.DOMUtil;
 import com.evolveum.midpoint.util.JAXBUtil;
 import com.evolveum.midpoint.util.exception.SchemaException;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ExpressionReturnMultiplicityType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ExpressionType;
-import com.evolveum.prism.xml.ns._public.types_2.RawType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ExpressionReturnMultiplicityType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ExpressionType;
+import com.evolveum.prism.xml.ns._public.types_3.RawType;
 
 /**
  * Utility class for manipulation of static values in expressions. This is not
@@ -135,11 +134,13 @@ public class StaticExpressionUtil {
 			return null;
 		}
 		XNodeProcessor xnodeProcessor = item.getPrismContext().getXnodeProcessor();
-		List<JAXBElement<RawType>> elements = new ArrayList<>(1);
-		XNode xnode = xnodeProcessor.serializeItem(item);
-		RawType rawType = new RawType(xnode);
-		JAXBElement<RawType> jaxbElement = new JAXBElement<RawType>(SchemaConstants.C_VALUE, RawType.class, rawType);
-		elements.add(jaxbElement);
+		List<JAXBElement<RawType>> elements = new ArrayList<>(item.size());
+        for (PrismValue value : item.getValues()) {
+            XNode xnode = xnodeProcessor.serializeItemValue(value);
+            RawType rawType = new RawType(xnode, item.getPrismContext());
+            JAXBElement<RawType> jaxbElement = new JAXBElement<>(SchemaConstants.C_VALUE, RawType.class, rawType);
+            elements.add(jaxbElement);
+        }
 		return elements;
 	}
 

@@ -18,6 +18,7 @@ package com.evolveum.midpoint.model.controller;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -29,12 +30,10 @@ import javax.xml.namespace.QName;
 import com.evolveum.midpoint.model.api.TaskService;
 import com.evolveum.midpoint.model.api.WorkflowService;
 import com.evolveum.midpoint.model.api.hooks.ReadHook;
+import com.evolveum.midpoint.model.lens.LensProjectionContext;
 import com.evolveum.midpoint.model.util.Utils;
 import com.evolveum.midpoint.wf.api.WorkflowManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.TaskType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.WfProcessInstanceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.WorkItemType;
-import com.evolveum.midpoint.xml.ns._public.model.model_context_2.LensContextType;
+import com.evolveum.midpoint.xml.ns._public.model.model_context_3.LensContextType;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.Validate;
@@ -52,7 +51,13 @@ import com.evolveum.midpoint.audit.api.AuditEventType;
 import com.evolveum.midpoint.audit.api.AuditService;
 import com.evolveum.midpoint.common.InternalsConfig;
 import com.evolveum.midpoint.common.crypto.CryptoUtil;
+import com.evolveum.midpoint.common.refinery.LayerRefinedAttributeDefinition;
+import com.evolveum.midpoint.common.refinery.LayerRefinedObjectClassDefinition;
+import com.evolveum.midpoint.common.refinery.LayerRefinedResourceSchema;
+import com.evolveum.midpoint.common.refinery.RefinedObjectClassDefinition;
+import com.evolveum.midpoint.common.refinery.RefinedResourceSchema;
 import com.evolveum.midpoint.model.ModelObjectResolver;
+import com.evolveum.midpoint.model.api.ModelAuthorizationAction;
 import com.evolveum.midpoint.model.api.ModelExecuteOptions;
 import com.evolveum.midpoint.model.api.ModelInteractionService;
 import com.evolveum.midpoint.model.api.ModelService;
@@ -66,8 +71,11 @@ import com.evolveum.midpoint.model.lens.Clockwork;
 import com.evolveum.midpoint.model.lens.ContextFactory;
 import com.evolveum.midpoint.model.lens.LensContext;
 import com.evolveum.midpoint.model.lens.projector.Projector;
+import com.evolveum.midpoint.prism.ComplexTypeDefinition;
 import com.evolveum.midpoint.prism.Item;
+import com.evolveum.midpoint.prism.ItemDefinition;
 import com.evolveum.midpoint.prism.PrismContainer;
+import com.evolveum.midpoint.prism.PrismContainerDefinition;
 import com.evolveum.midpoint.prism.PrismContainerValue;
 import com.evolveum.midpoint.prism.PrismContext;
 import com.evolveum.midpoint.prism.PrismObject;
@@ -99,6 +107,7 @@ import com.evolveum.midpoint.schema.constants.ObjectTypes;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.schema.result.OperationResultRunner;
 import com.evolveum.midpoint.schema.result.OperationResultStatus;
+import com.evolveum.midpoint.schema.util.ShadowUtil;
 import com.evolveum.midpoint.security.api.Authorization;
 import com.evolveum.midpoint.security.api.AuthorizationConstants;
 import com.evolveum.midpoint.security.api.ObjectSecurityConstraints;
@@ -108,6 +117,7 @@ import com.evolveum.midpoint.security.api.UserProfileService;
 import com.evolveum.midpoint.task.api.Task;
 import com.evolveum.midpoint.task.api.TaskManager;
 import com.evolveum.midpoint.util.DebugUtil;
+import com.evolveum.midpoint.util.DisplayableValue;
 import com.evolveum.midpoint.util.exception.CommonException;
 import com.evolveum.midpoint.util.exception.CommunicationException;
 import com.evolveum.midpoint.util.exception.ConfigurationException;
@@ -120,22 +130,27 @@ import com.evolveum.midpoint.util.exception.SystemException;
 import com.evolveum.midpoint.util.logging.LoggingUtils;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.api_types_2.ImportOptionsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.AuthorizationDecisionType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorHostType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ConnectorType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.FocusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectReferenceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectSynchronizationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OperationResultStatusType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.OperationResultType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ReportType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ResourceType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemConfigurationType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SystemObjectsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.api_types_3.ImportOptionsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.AuthorizationDecisionType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConnectorHostType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ConnectorType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.FocusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.LayerType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectReferenceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectSynchronizationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OperationResultStatusType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.OperationResultType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ReportType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ResourceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowKindType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemObjectsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.WfProcessInstanceType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.WorkItemType;
 
 /**
  * This used to be an interface, but it was switched to class for simplicity. I
@@ -343,10 +358,12 @@ public class ModelController implements ModelService, ModelInteractionService, T
 	 * @see com.evolveum.midpoint.model.api.ModelService#executeChanges(java.util.Collection, com.evolveum.midpoint.task.api.Task, com.evolveum.midpoint.schema.result.OperationResult)
 	 */
 	@Override
-	public void executeChanges(final Collection<ObjectDelta<? extends ObjectType>> deltas, ModelExecuteOptions options,
+	public Collection<ObjectDeltaOperation<? extends ObjectType>> executeChanges(final Collection<ObjectDelta<? extends ObjectType>> deltas, ModelExecuteOptions options,
 			Task task, OperationResult parentResult) throws ObjectAlreadyExistsException, ObjectNotFoundException,
 			SchemaException, ExpressionEvaluationException, CommunicationException, ConfigurationException,
 			PolicyViolationException, SecurityViolationException {
+
+        Collection<ObjectDeltaOperation<? extends ObjectType>> retval = new ArrayList<>();
 
 		OperationResult result = parentResult.createSubresult(EXECUTE_CHANGES);
 		result.addParam(OperationResult.PARAM_OPTIONS, options);
@@ -387,36 +404,44 @@ public class ModelController implements ModelService, ModelInteractionService, T
 				auditRecord.addDeltas(ObjectDeltaOperation.cloneDeltaCollection(deltas));
 				auditService.audit(auditRecord, task);
 				for(ObjectDelta<? extends ObjectType> delta: deltas) {
-					if (delta.isAdd()) {
-						RepoAddOptions repoOptions = new RepoAddOptions();
-						if (ModelExecuteOptions.isNoCrypt(options)) {
-							repoOptions.setAllowUnencryptedValues(true);
-						}
-						if (ModelExecuteOptions.isOverwrite(options)) {
-							repoOptions.setOverwrite(true);
-						}
-						securityEnforcer.authorize(AUTZ_ADD_URL, null, delta.getObjectToAdd(), null, null, null, result);
-						String oid = cacheRepositoryService.addObject(delta.getObjectToAdd(), repoOptions, result);
-						delta.setOid(oid);
-					} else if (delta.isDelete()) {
-						PrismObject<? extends ObjectType> existingObject = cacheRepositoryService.getObject(delta.getObjectTypeClass(), delta.getOid(), null, result);
-						securityEnforcer.authorize(AUTZ_DELETE_URL, null, existingObject, null, null, null, result);
-						if (ObjectTypes.isClassManagedByProvisioning(delta.getObjectTypeClass())) {
-                            Utils.clearRequestee(task);
-							provisioning.deleteObject(delta.getObjectTypeClass(), delta.getOid(),
-									ProvisioningOperationOptions.createRaw(), null, task, result);
-						} else {
-							cacheRepositoryService.deleteObject(delta.getObjectTypeClass(), delta.getOid(),
-									result);
-						}
-					} else if (delta.isModify()) {
-						PrismObject existingObject = cacheRepositoryService.getObject(delta.getObjectTypeClass(), delta.getOid(), null, result);
-						securityEnforcer.authorize(AUTZ_MODIFY_URL, null, existingObject, delta, null, null, result);
-						cacheRepositoryService.modifyObject(delta.getObjectTypeClass(), delta.getOid(), 
-								delta.getModifications(), result);
-					} else {
-						throw new IllegalArgumentException("Wrong delta type "+delta.getChangeType()+" in "+delta);
-					}
+                    OperationResult result1 = result.createSubresult(EXECUTE_CHANGE);
+                    try {
+                        if (delta.isAdd()) {
+                            RepoAddOptions repoOptions = new RepoAddOptions();
+                            if (ModelExecuteOptions.isNoCrypt(options)) {
+                                repoOptions.setAllowUnencryptedValues(true);
+                            }
+                            if (ModelExecuteOptions.isOverwrite(options)) {
+                                repoOptions.setOverwrite(true);
+                            }
+                            securityEnforcer.authorize(ModelAuthorizationAction.ADD.getUrl(), null, delta.getObjectToAdd(), null, null, null, result1);
+                            String oid = cacheRepositoryService.addObject(delta.getObjectToAdd(), repoOptions, result1);
+                            delta.setOid(oid);
+                        } else if (delta.isDelete()) {
+                            PrismObject<? extends ObjectType> existingObject = cacheRepositoryService.getObject(delta.getObjectTypeClass(), delta.getOid(), null, result1);
+                            securityEnforcer.authorize(ModelAuthorizationAction.DELETE.getUrl(), null, existingObject, null, null, null, result1);
+                            if (ObjectTypes.isClassManagedByProvisioning(delta.getObjectTypeClass())) {
+                                Utils.clearRequestee(task);
+                                provisioning.deleteObject(delta.getObjectTypeClass(), delta.getOid(),
+                                        ProvisioningOperationOptions.createRaw(), null, task, result1);
+                            } else {
+                                cacheRepositoryService.deleteObject(delta.getObjectTypeClass(), delta.getOid(),
+                                        result1);
+                            }
+                        } else if (delta.isModify()) {
+                            PrismObject existingObject = cacheRepositoryService.getObject(delta.getObjectTypeClass(), delta.getOid(), null, result1);
+                            securityEnforcer.authorize(ModelAuthorizationAction.MODIFY.getUrl(), null, existingObject, delta, null, null, result1);
+                            cacheRepositoryService.modifyObject(delta.getObjectTypeClass(), delta.getOid(),
+                                    delta.getModifications(), result1);
+                        } else {
+                            throw new IllegalArgumentException("Wrong delta type "+delta.getChangeType()+" in "+delta);
+                        }
+                    } catch (ObjectAlreadyExistsException|SchemaException|ObjectNotFoundException|ConfigurationException|CommunicationException|SecurityViolationException|RuntimeException e) {
+                        ModelUtils.recordFatalError(result1, e);
+                        throw e;
+                    }
+                    result1.computeStatus();
+                    retval.add(new ObjectDeltaOperation<>(delta, result1));
 				}
 				auditRecord.setTimestamp(null);
 				auditRecord.setOutcome(OperationResultStatus.SUCCESS);
@@ -428,7 +453,14 @@ public class ModelController implements ModelService, ModelInteractionService, T
 				LensContext<? extends ObjectType> context = contextFactory.createContext(deltas, options, task, result);
 				// Note: Request authorization happens inside clockwork
 				clockwork.run(context, task, result);
-						
+
+                // prepare return value
+                if (context.getFocusContext() != null) {
+                    retval.addAll(context.getFocusContext().getExecutedDeltas());
+                }
+                for (LensProjectionContext projectionContext : context.getProjectionContexts()) {
+                    retval.addAll(projectionContext.getExecutedDeltas());
+                }
 			}
 			
 			result.computeStatus();
@@ -471,6 +503,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 		} finally {
 			RepositoryCache.exit();
 		}
+        return retval;
 	}
 	
 	@Override
@@ -575,6 +608,9 @@ public class ModelController implements ModelService, ModelInteractionService, T
 				}
 			} else {
 				PrismObjectDefinition objDef = prismContext.getSchemaRegistry().findObjectDefinitionByCompileTimeClass(delta.getObjectTypeClass());
+                if (objDef == null) {
+                    throw new SchemaException("No definition for delta object type class: " + delta.getObjectTypeClass());
+                }
 				delta.applyDefinition(objDef);
 			}
 		}
@@ -666,8 +702,139 @@ public class ModelController implements ModelService, ModelInteractionService, T
 
 		return context;
 	}
+	
+	@Override
+	public <O extends ObjectType> PrismObjectDefinition<O> getEditObjectDefinition(PrismObject<O> object) throws SchemaException {
+		PrismObjectDefinition<O> origDefinition = object.getDefinition();
+		// TODO: maybe we need to expose owner resolver in the interface?
+		ObjectSecurityConstraints securityConstraints = securityEnforcer.compileSecurityConstraints(object, null);
+		if (LOGGER.isTraceEnabled()) {
+			LOGGER.trace("Security constrains for {}:\n{}", object, securityConstraints==null?"null":securityConstraints.debugDump());
+		}
+		if (securityConstraints == null) {
+			return null;
+		}
+		PrismObjectDefinition<O> finalDefinition = applySecurityContraints(origDefinition, new ItemPath(), securityConstraints,
+				securityConstraints.getActionDecistion(ModelAuthorizationAction.READ.getUrl(), null),
+				securityConstraints.getActionDecistion(ModelAuthorizationAction.ADD.getUrl(), null),
+				securityConstraints.getActionDecistion(ModelAuthorizationAction.MODIFY.getUrl(), null));
+		return finalDefinition;
+	}
+	
+	private <D extends ItemDefinition> D applySecurityContraints(D origItemDefinition, ItemPath itemPath, ObjectSecurityConstraints securityConstraints,
+			AuthorizationDecisionType defaultReadDecition, AuthorizationDecisionType defaultAddDecition, AuthorizationDecisionType defaultModifyDecition) {
+		D itemDefinition = (D) origItemDefinition.clone();
+		// We need to make a super-deep clone here. Even make sure that the complex types inside are cloned.
+		// Otherwise permissions from one part of the definition tree may be incorrectly propagated to another part
+		if (itemDefinition instanceof PrismContainerDefinition<?>) {
+			PrismContainerDefinition<?> containerDefinition = (PrismContainerDefinition<?>)itemDefinition;
+			ComplexTypeDefinition origCtd = containerDefinition.getComplexTypeDefinition();
+			containerDefinition.setComplexTypeDefinition(origCtd.clone());
+		}
+		AuthorizationDecisionType readDecision = computeItemDecision(securityConstraints, itemPath, ModelAuthorizationAction.READ.getUrl(), defaultReadDecition);
+		AuthorizationDecisionType addDecision = computeItemDecision(securityConstraints, itemPath, ModelAuthorizationAction.ADD.getUrl(), defaultAddDecition);
+		AuthorizationDecisionType modifyDecision = computeItemDecision(securityConstraints, itemPath, ModelAuthorizationAction.MODIFY.getUrl(), defaultModifyDecition);
+//		LOGGER.trace("Decision for {}: {}", itemPath, readDecision);
+		if (readDecision != AuthorizationDecisionType.ALLOW) {
+			itemDefinition.setCanRead(false);
+		}
+		if (addDecision != AuthorizationDecisionType.ALLOW) {
+			itemDefinition.setCanAdd(false);
+		}
+		if (modifyDecision != AuthorizationDecisionType.ALLOW) {
+			itemDefinition.setCanModify(false);
+		}
+		
+		if (itemDefinition instanceof PrismContainerDefinition<?>) {
+			PrismContainerDefinition<?> containerDefinition = (PrismContainerDefinition<?>)itemDefinition;
+			// The items are still shallow-clonned, we need to deep-clone them
+			List<? extends ItemDefinition> origSubDefinitions = ((PrismContainerDefinition<?>)origItemDefinition).getDefinitions();
+			containerDefinition.getDefinitions().clear();
+			for (ItemDefinition subDef: origSubDefinitions) {
+				ItemDefinition newDef = applySecurityContraints(subDef, new ItemPath(itemPath, subDef.getName()), securityConstraints, 
+						readDecision, addDecision, modifyDecision);
+				containerDefinition.getComplexTypeDefinition().add(newDef);
+			}
+		}
+		return itemDefinition;
+	}
+		
+    private AuthorizationDecisionType computeItemDecision(ObjectSecurityConstraints securityConstraints, ItemPath itemPath, String actionUrl,
+			AuthorizationDecisionType defaultDecision) {
+    	AuthorizationDecisionType explicitDecision = securityConstraints.findItemDecision(itemPath, actionUrl, null);
+//    	LOGGER.trace("Explicit decision for {}: {}", itemPath, explicitDecision);
+    	if (explicitDecision != null) {
+    		return explicitDecision;
+    	} else {
+    		return defaultDecision;
+    	}
+	}
+    
+    @Override
+	public RefinedObjectClassDefinition getEditObjectClassDefinition(PrismObject<ShadowType> shadow, PrismObject<ResourceType> resource)
+			throws SchemaException {
+    	// TODO: maybe we need to expose owner resolver in the interface?
+		ObjectSecurityConstraints securityConstraints = securityEnforcer.compileSecurityConstraints(shadow, null);
+		if (LOGGER.isTraceEnabled()) {
+			LOGGER.trace("Security constrains for {}:\n{}", shadow, securityConstraints==null?"null":securityConstraints.debugDump());
+		}
+		if (securityConstraints == null) {
+			return null;
+		}
+    	
+    	RefinedResourceSchema refinedSchema = RefinedResourceSchema.getRefinedSchema(resource);
+    	LayerRefinedResourceSchema layerRefinedSchema = refinedSchema.forLayer(LayerType.PRESENTATION);
+    	ShadowType shadowType = shadow.asObjectable();
+    	ShadowKindType kind = shadowType.getKind();
+    	String intent = shadowType.getIntent();
+    	LayerRefinedObjectClassDefinition rOCDef;
+    	if (kind != null) {
+    		rOCDef = layerRefinedSchema.getRefinedDefinition(kind, intent);
+    	} else {
+    		QName objectClassName = shadowType.getObjectClass();
+    		if (objectClassName == null) {
+    			// No data. Fall back to the default
+    			rOCDef = layerRefinedSchema.getRefinedDefinition(ShadowKindType.ACCOUNT, (String)null);
+    		} else {
+    			rOCDef = layerRefinedSchema.getRefinedDefinition(objectClassName);
+    		}
+    	}
+    	
+    	ItemPath attributesPath = new ItemPath(ShadowType.F_ATTRIBUTES);
+		AuthorizationDecisionType attributesReadDecision = computeItemDecision(securityConstraints, attributesPath, ModelAuthorizationAction.READ.getUrl(), 
+    			securityConstraints.getActionDecistion(ModelAuthorizationAction.READ.getUrl(), null));
+		AuthorizationDecisionType attributesAddDecision = computeItemDecision(securityConstraints, attributesPath, ModelAuthorizationAction.ADD.getUrl(),
+				securityConstraints.getActionDecistion(ModelAuthorizationAction.ADD.getUrl(), null));
+		AuthorizationDecisionType attributesModifyDecision = computeItemDecision(securityConstraints, attributesPath, ModelAuthorizationAction.MODIFY.getUrl(),
+				securityConstraints.getActionDecistion(ModelAuthorizationAction.MODIFY.getUrl(), null));
+		LOGGER.trace("Attributes container access read:{}, add:{}, modify:{}", new Object[]{attributesReadDecision, attributesAddDecision, attributesModifyDecision});
+		for (LayerRefinedAttributeDefinition rAttrDef: rOCDef.getAttributeDefinitions()) {
+			ItemPath attributePath = new ItemPath(ShadowType.F_ATTRIBUTES, rAttrDef.getName());
+			AuthorizationDecisionType attributeReadDecision = computeItemDecision(securityConstraints, attributePath, ModelAuthorizationAction.READ.getUrl(), attributesReadDecision);
+			AuthorizationDecisionType attributeAddDecision = computeItemDecision(securityConstraints, attributePath, ModelAuthorizationAction.ADD.getUrl(), attributesAddDecision);
+			AuthorizationDecisionType attributeModifyDecision = computeItemDecision(securityConstraints, attributePath, ModelAuthorizationAction.MODIFY.getUrl(), attributesModifyDecision);
+			LOGGER.trace("Attribute {} access read:{}, add:{}, modify:{}", new Object[]{rAttrDef.getName(), attributeReadDecision, attributeAddDecision, attributeModifyDecision});
+			if (attributeReadDecision != AuthorizationDecisionType.ALLOW) {
+				rAttrDef.setOverrideCanRead(false);
+			}
+			if (attributeAddDecision != AuthorizationDecisionType.ALLOW) {
+				rAttrDef.setOverrideCanAdd(false);
+			}
+			if (attributeModifyDecision != AuthorizationDecisionType.ALLOW) {
+				rAttrDef.setOverrideCanModify(false);
+			}
+		}
+    	
+    	return rOCDef;
+	}
 
-    private PrismObject<SystemConfigurationType> getSystemConfiguration(OperationResult result) throws ObjectNotFoundException, SchemaException {
+	@Override
+	public Collection<? extends DisplayableValue<String>> getActionUrls() {
+		return Arrays.asList(ModelAuthorizationAction.values());
+	}
+
+
+	private PrismObject<SystemConfigurationType> getSystemConfiguration(OperationResult result) throws ObjectNotFoundException, SchemaException {
         PrismObject<SystemConfigurationType> config = cacheRepositoryService.getObject(SystemConfigurationType.class,
                 SystemObjectsType.SYSTEM_CONFIGURATION.value(), null, result);
 
@@ -1274,14 +1441,14 @@ public class ModelController implements ModelService, ModelInteractionService, T
 	private <T extends ObjectType> void postProcessObject(PrismObject<T> object, GetOperationOptions options, OperationResult result) throws SecurityViolationException, SchemaException {
 		validateObject(object, options, result);
 		try {
-			ObjectSecurityConstraints securityConstraints = securityEnforcer.compileSecurityContraints(object, null);
+			ObjectSecurityConstraints securityConstraints = securityEnforcer.compileSecurityConstraints(object, null);
 			if (LOGGER.isTraceEnabled()) {
 				LOGGER.trace("Security constrains for {}:\n{}", object, securityConstraints==null?"null":securityConstraints.debugDump());
 			}
 			if (securityConstraints == null) {
 				throw new SecurityViolationException("Access denied");
 			}
-			AuthorizationDecisionType globalDecision = securityConstraints.getActionDecistion(ModelService.AUTZ_READ_URL, null);
+			AuthorizationDecisionType globalDecision = securityConstraints.getActionDecistion(ModelAuthorizationAction.READ.getUrl(), null);
 			if (globalDecision == AuthorizationDecisionType.DENY) {
 				// shortcut
 				throw new SecurityViolationException("Access denied");
@@ -1307,7 +1474,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
 		while (iterator.hasNext()) {
 			Item<? extends PrismValue> item = iterator.next();
 			ItemPath itemPath = item.getPath();
-			AuthorizationDecisionType itemDecision = securityContraints.findItemDecision(itemPath, ModelService.AUTZ_READ_URL, null);
+			AuthorizationDecisionType itemDecision = securityContraints.findItemDecision(itemPath, ModelAuthorizationAction.READ.getUrl(), null);
 			if (item instanceof PrismContainer<?>) {
 				if (itemDecision == AuthorizationDecisionType.DENY) {
 					// Explicitly denied access to the entire container
@@ -1434,7 +1601,7 @@ public class ModelController implements ModelService, ModelInteractionService, T
     	if (origQuery != null) {
     		origFilter = origQuery.getFilter();
     	}
-		ObjectFilter secFilter = securityEnforcer.preProcessObjectFilter(ModelService.AUTZ_READ_URL, null, objectType, origFilter);
+		ObjectFilter secFilter = securityEnforcer.preProcessObjectFilter(ModelAuthorizationAction.READ.getUrl(), null, objectType, origFilter);
 		if (origQuery != null) {
 			origQuery.setFilter(secFilter);
 			return origQuery;
@@ -1522,12 +1689,12 @@ public class ModelController implements ModelService, ModelInteractionService, T
 
     //region Workflow-related operations
     @Override
-    public int countWorkItemsRelatedToUser(String userOid, boolean assigned, OperationResult parentResult) {
+    public int countWorkItemsRelatedToUser(String userOid, boolean assigned, OperationResult parentResult) throws SchemaException, ObjectNotFoundException {
         return workflowManager.countWorkItemsRelatedToUser(userOid, assigned, parentResult);
     }
 
     @Override
-    public List<WorkItemType> listWorkItemsRelatedToUser(String userOid, boolean assigned, int first, int count, OperationResult parentResult) {
+    public List<WorkItemType> listWorkItemsRelatedToUser(String userOid, boolean assigned, int first, int count, OperationResult parentResult) throws SchemaException, ObjectNotFoundException {
         return workflowManager.listWorkItemsRelatedToUser(userOid, assigned, first, count, parentResult);
     }
 

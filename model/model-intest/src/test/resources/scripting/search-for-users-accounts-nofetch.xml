@@ -15,8 +15,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<s:pipeline xmlns:s="http://midpoint.evolveum.com/xml/ns/public/model/scripting-2"
-            xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-2a">
+<s:pipeline xmlns:s="http://midpoint.evolveum.com/xml/ns/public/model/scripting-3"
+            xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3">
     <s:search>
         <s:type>c:UserType</s:type>
     </s:search>
@@ -30,9 +30,7 @@
         <s:type>resolve</s:type>
         <s:parameter>
             <s:name>noFetch</s:name>
-            <s:constant>
-                <s:value>true</s:value>
-            </s:constant>
+            <s:constant>true</s:constant>
         </s:parameter>
     </s:action>
 </s:pipeline>
