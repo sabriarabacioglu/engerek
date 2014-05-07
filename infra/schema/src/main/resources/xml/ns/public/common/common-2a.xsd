@@ -2529,6 +2529,13 @@
         			</xsd:documentation>
         		</xsd:annotation>
         	</xsd:element>
+        	<xsd:element name="questionAnswer" type="xsd:string" maxOccurs="1">
+        		<xsd:annotation>
+        			<xsd:documentation>
+        				Users answer to the related question
+        			</xsd:documentation>
+        		</xsd:annotation>
+        	</xsd:element>
             <!--  TODO: sabri  -->
         </xsd:sequence>
     </xsd:complexType>
@@ -7988,6 +7995,8 @@
 			</xsd:appinfo>
 		</xsd:annotation>
 		<xsd:sequence>
+		
+		
 			<!-- TODO: sabri 
 				settings that apply to all questions should go here, like this:
 				<xsd:element name="whatever" type="xsd:string" minOccurs="0"/>
@@ -8036,6 +8045,13 @@
 					</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
+			<xsd:element name="answer" type="xsd:string" maxOccurs="1">
+        	    <xsd:annotation>
+                    <xsd:documentation>
+                        The actual answer given to the question
+                    </xsd:documentation>
+                </xsd:annotation>
+        	</xsd:element>
 			<!-- TODO: sabri 
 				settings that apply to a specific security question should go here, like this:
 				<xsd:element name="something" type="xsd:string" minOccurs="0"/>
@@ -9883,6 +9899,4 @@
         </xsd:sequence>
     </xsd:complexType>
     <xsd:element name="decisionType" type="tns:DecisionType" />
-
 </xsd:schema>
-
