@@ -58,6 +58,7 @@
                 <name>PageAdmin.menu.top.roles.new</name>
                 <page>com.evolveum.midpoint.web.page.admin.roles.PageRole</page>
             </item>
+            
         </root>
         <root>
             <name>PageAdmin.menu.top.resources</name>

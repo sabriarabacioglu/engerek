@@ -211,7 +211,8 @@ public class PageAdmin extends PageBase {
         MenuBarItem roles = new MenuBarItem(createStringResource("PageAdmin.menu.top.roles"), null);
         roles.addMenuItem(new MenuItem(createStringResource("PageAdmin.menu.top.roles.list"), PageRoles.class));
         roles.addMenuItem(new MenuItem(createStringResource("PageAdmin.menu.top.roles.new"), PageRole.class));
-
+        
+        
         return roles;
     }
 }
