@@ -51,16 +51,16 @@ import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.logging.LoggingUtils;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.CredentialsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.CredentialsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.PasswordType;
 // import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;.
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionAnswerType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionsCredentialsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
-import com.evolveum.prism.xml.ns._public.types_2.ProtectedStringType;
-import com.sun.tools.xjc.reader.xmlschema.bindinfo.BIConversion.User;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SecurityQuestionAnswerType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SecurityQuestionsCredentialsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
+import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
+
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.atmosphere.EventBus;
@@ -126,8 +126,10 @@ public class PageForgetPassword extends PageBase {
                 	//If the parameters are ok reset the password
                     System.out.println("Reset Password User var.");
                     PageParameters parameters = new PageParameters();
-                    parameters.add(PageForgetPasswordQuestions.PARAM_OBJECT_ID, user.getOid());
-                    setResponsePage(PageForgetPasswordQuestions.class, parameters);
+                    PageForgetPasswordQuestions pageForgetPasswordQuestions =new PageForgetPasswordQuestions();
+                    pageForgetPasswordQuestions.setUserTypeObject(user);
+                   
+                    setResponsePage(pageForgetPasswordQuestions);
                    
                    
                 	
