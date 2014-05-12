@@ -51,15 +51,8 @@ import com.evolveum.midpoint.util.exception.SecurityViolationException;
 import com.evolveum.midpoint.util.logging.LoggingUtils;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.CredentialsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ObjectType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;
-// import com.evolveum.midpoint.xml.ns._public.common.common_2a.PasswordType;.
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionAnswerType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.SecurityQuestionsCredentialsType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.ShadowType;
-import com.evolveum.midpoint.xml.ns._public.common.common_2a.UserType;
-import com.evolveum.prism.xml.ns._public.types_2.ProtectedStringType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
+import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
 import com.sun.tools.xjc.reader.xmlschema.bindinfo.BIConversion.User;
 
 import org.apache.commons.lang.StringUtils;
@@ -122,20 +115,20 @@ public class PageForgetPassword extends PageBase {
                 
             	UserType user= checkUser(email.getModelObject(),username.getModelObject() );
                 
-            	if(user!=null){
-                	//If the parameters are ok reset the password
-                    System.out.println("Reset Password User var.");
-                    PageParameters parameters = new PageParameters();
-                    parameters.add(PageForgetPasswordQuestions.PARAM_OBJECT_ID, user.getOid());
-                    setResponsePage(PageForgetPasswordQuestions.class, parameters);
-                   
-                   
-                	
-                	
-                }
-                else{
-                	
-                }
+//            	if(user!=null){
+//                	//If the parameters are ok reset the password
+//                    System.out.println("Reset Password User var.");
+//                    PageParameters parameters = new PageParameters();
+//                    parameters.add(PageForgetPasswordQuestions.PARAM_OBJECT_ID, user.getOid());
+//                    setResponsePage(PageForgetPasswordQuestions.class, parameters);
+//                   
+//                   
+//                	
+//                	
+//                }
+//                else{
+//                	
+//                }
               
             }
         };

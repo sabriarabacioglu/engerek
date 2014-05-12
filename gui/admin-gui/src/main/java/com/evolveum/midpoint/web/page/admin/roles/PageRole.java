@@ -25,6 +25,7 @@ import com.evolveum.midpoint.prism.schema.SchemaRegistry;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.security.api.AuthorizationConstants;
 import com.evolveum.midpoint.task.api.Task;
+import com.evolveum.midpoint.util.DisplayableValue;
 import com.evolveum.midpoint.util.logging.LoggingUtils;
 import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
@@ -51,8 +52,11 @@ import org.apache.wicket.model.Model;
 import org.apache.wicket.model.StringResourceModel;
 import org.apache.wicket.util.string.StringValue;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import javax.xml.namespace.QName;
 
 /**
  *  @author shood
@@ -88,6 +92,8 @@ public class PageRole extends PageAdminRoles{
     private static final String ID_INPUT_SIZE = "col-md-8";
 
     private IModel<PrismObject<RoleType>> model;
+    private IModel<List<AutzActionsTableDto>> selected_autz;
+    private IModel<List<AutzActionsTableDto>> authorizations_list;
 
     public PageRole(){
 
@@ -95,9 +101,53 @@ public class PageRole extends PageAdminRoles{
             @Override
             protected PrismObject<RoleType> load() {
                 return loadRole();
+               
             }
+            
         };
 
+        selected_autz = new LoadableModel<List<AutzActionsTableDto>>(false){
+        	@Override
+        	protected List<AutzActionsTableDto> load() {
+        		PrismObject obj = model.getObject();
+        	
+        		PrismContainer container = obj.findContainer(RoleType.F_AUTHORIZATION);
+        		if (container == null) {
+        			return new ArrayList<>();
+        		}
+        		
+        		List<AutzActionsTableDto> list = new ArrayList<>();
+        		for (PrismContainerValue value : (List<PrismContainerValue>) container.getValues()) {
+        			PrismProperty action = value.findProperty(AuthorizationType.F_ACTION);
+        			if (action == null) {
+        				continue;
+        			}
+        			List<String> actions = (List<String>) action.getRealValues();
+        			
+//        			Collection<DisplayableValue<String>> collection = getModelInteractionService().getActionUrls();
+        			
+        			for (String a : actions) {
+        				list.add(new AutzActionsTableDto<>(null, null, a));
+        			}        			
+				}
+
+        		return list;
+        	}
+        };
+        
+        authorizations_list = new LoadableModel<List<AutzActionsTableDto>>(false){
+        	@Override
+        	protected List<AutzActionsTableDto> load() {
+        		Collection<DisplayableValue<String>> collection = (Collection<DisplayableValue<String>>) getModelInteractionService().getActionUrls();
+        		List<AutzActionsTableDto> listOfActions= new ArrayList();
+        		for (DisplayableValue<String> tr : collection){
+        			listOfActions.add(new AutzActionsTableDto(tr.getLabel(),tr.getDescription(),tr.getValue()));
+        		}
+        		return listOfActions;
+        	}
+        	
+        };
+       
         initLayout();
     }
 
@@ -256,6 +306,9 @@ public class PageRole extends PageAdminRoles{
         };
         form.add(inducements);
 
+      AutzActionsTablePanel  ap = new AutzActionsTablePanel("autzActionsPanel", selected_autz);
+      form.add(ap);
+        
         initButtons(form);
     }
 
