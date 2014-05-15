@@ -17,7 +17,9 @@ import com.evolveum.midpoint.prism.delta.PropertyDelta;
 import com.evolveum.midpoint.prism.match.PolyStringOrigMatchingRule;
 import com.evolveum.midpoint.prism.path.ItemPath;
 import com.evolveum.midpoint.prism.polystring.PolyString;
+import com.evolveum.midpoint.prism.query.AndFilter;
 import com.evolveum.midpoint.prism.query.EqualsFilter;
+import com.evolveum.midpoint.prism.query.ObjectFilter;
 import com.evolveum.midpoint.prism.query.ObjectQuery;
 import com.evolveum.midpoint.prism.schema.SchemaRegistry;
 import com.evolveum.midpoint.schema.result.OperationResult;
@@ -64,9 +66,13 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.RoleType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.SecurityQuestionAnswerType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.SecurityQuestionsCredentialsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
 import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
+
+
+
 
 
 
@@ -150,14 +156,14 @@ public class PageForgetPassword extends PageBase {
 					MidPointPrincipal principal=getSecurityEnforcer().getUserProfileService().getPrincipal("administrator");
 					Authentication authentication = new PreAuthenticatedAuthenticationToken(principal, null);
 					getSecurityEnforcer().setupPreAuthenticatedSecurityContext(authentication);
-					
-				
+
+
 				} catch (ObjectNotFoundException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
-				
+
+
 				UserType user= checkUser(email.getModelObject(),username.getModelObject() );
 
 
@@ -285,19 +291,25 @@ public class PageForgetPassword extends PageBase {
 		OperationResult subResult = result.createSubresult(OPERATION_LOAD_USER);
 
 		LOGGER.info("CheckUser Poly oncesi");
-		PolyString YOUR_NAME = new PolyString(username, username);
+		PolyString userId = new PolyString(username, username);
+		PolyString emailAddress = new PolyString(username, username);
+		List<ObjectFilter> filters = new ArrayList<ObjectFilter>();
+
 		EqualsFilter filter;
 		PageBase page = (PageBase) getPage();
 
 		ModelService model = page.getModelService();
 		try {
+			filters.add(EqualsFilter.createEqual(UserType.F_NAME, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,username));
+			filters.add(EqualsFilter.createEqual(UserType.F_EMAIL_ADDRESS, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,email));
 
-			filter = EqualsFilter.createEqual(UserType.F_NAME, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,YOUR_NAME);
-
-			ObjectQuery query = ObjectQuery.createObjectQuery(filter);
+			ObjectQuery query = new ObjectQuery().createObjectQuery(AndFilter.createAnd(filters));
 
 
-			List<PrismObject<UserType>> userList= model.searchObjects(UserType.class, query, options, task, subResult);
+			List<PrismObject<UserType>> userList= WebModelUtils.searchObjects(UserType.class, query,
+                    result, this);
+					
+				//	model.searchObjects(UserType.class, query, options, task, subResult);
 
 			LOGGER.info("CheckUser try ici");
 			if((userList!=null) && (!userList.isEmpty())){
@@ -315,27 +327,11 @@ public class PageForgetPassword extends PageBase {
 			else return null;
 
 
-		} catch (SchemaException e1) {
+		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			return null;
-		} catch (ObjectNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		} catch (SecurityViolationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		} catch (CommunicationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		} catch (ConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return null;
-		}
+		} 
 
 
 

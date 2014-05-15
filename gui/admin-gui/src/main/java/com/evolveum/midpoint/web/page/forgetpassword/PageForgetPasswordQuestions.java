@@ -28,8 +28,10 @@ import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.web.application.PageDescriptor;
 import com.evolveum.midpoint.web.component.menu.top.LocalePanel;
 import com.evolveum.midpoint.web.component.menu.top.TopMenuBar;
+import com.evolveum.midpoint.web.component.util.LoadableModel;
 import com.evolveum.midpoint.web.page.PageBase;
 import com.evolveum.midpoint.web.page.admin.configuration.PageSystemConfiguration;
+import com.evolveum.midpoint.web.page.admin.home.dto.MyPasswordsDto;
 import com.evolveum.midpoint.web.page.admin.users.PageUser;
 import com.evolveum.midpoint.web.util.OnePageParameterEncoder;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.SecurityQuestionAnswerType;
@@ -56,6 +58,17 @@ public class PageForgetPasswordQuestions extends PageBase {
 	
 
 	public PageForgetPasswordQuestions() {
+
+	//	  model = new LoadableModel<MyPasswordsDto>(false) {
+
+	  //          @Override
+	    //        protected MyPasswordsDto load() {
+	      //          return loadPageModel();
+	      //      }
+	     //   };
+
+	  //      initLayout();
+	  //  }
 
 		TopMenuBar menuBar = getTopMenuBar();
 		menuBar.addOrReplace(new LocalePanel(TopMenuBar.ID_RIGHT_PANEL));

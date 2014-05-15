@@ -12,6 +12,8 @@ public class ForgetPasswordDto implements Serializable {
 	private String searchText;
 	private String userName;
 	private String email;
+	
+	
 	public String getEmail() {
 		return email;
 	}
