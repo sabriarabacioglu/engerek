@@ -7959,12 +7959,15 @@
 			 <xsd:element name="question" type="tns:SecurityQuestionDefinitionType" minOccurs="0" maxOccurs="unbounded">
 			 	<xsd:annotation>
 			 		<xsd:documentation>
-			 			The set of all the security questions in this policy.
+			 			The set of all the security questions in this policy. 
 			 		</xsd:documentation>
 			 	</xsd:annotation>
 			 </xsd:element>
 		</xsd:sequence>
 	</xsd:complexType>
+	
+	 <xsd:element name="SecurityQuestionsCredentialsPolicy" type="tns:SecurityQuestionsCredentialsPolicyType"/>
+	
 	
 	<xsd:complexType name="SecurityQuestionDefinitionType">
 		<xsd:annotation>
@@ -7999,10 +8002,10 @@
 					</xsd:documentation>
 				</xsd:annotation>
 			</xsd:element>
-			<xsd:element name="question" type="xsd:string" maxOccurs="1">
+			<xsd:element name="questionText" type="xsd:string" maxOccurs="1">
         	    <xsd:annotation>
                     <xsd:documentation>
-                        The actual answer given to the question
+                        The question itself, or the localization identifier to it.
                     </xsd:documentation>
                 </xsd:annotation>
         	</xsd:element>
