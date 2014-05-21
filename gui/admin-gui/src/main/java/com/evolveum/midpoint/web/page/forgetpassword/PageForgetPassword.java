@@ -18,7 +18,7 @@ import com.evolveum.midpoint.prism.match.PolyStringOrigMatchingRule;
 import com.evolveum.midpoint.prism.path.ItemPath;
 import com.evolveum.midpoint.prism.polystring.PolyString;
 import com.evolveum.midpoint.prism.query.AndFilter;
-import com.evolveum.midpoint.prism.query.EqualsFilter;
+import com.evolveum.midpoint.prism.query.EqualFilter;
 import com.evolveum.midpoint.prism.query.ObjectFilter;
 import com.evolveum.midpoint.prism.query.ObjectQuery;
 import com.evolveum.midpoint.prism.schema.SchemaRegistry;
@@ -70,6 +70,7 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
 import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
+
 
 
 
@@ -207,7 +208,7 @@ public class PageForgetPassword extends PageBase {
 	private void resetPassword(UserType user){
 
 
-		Task task = createSimpleTask(OPERATION_SAVE_PASSWORD);
+		Task task = createSimpleTask(OPERATION_RESET_PASSWORD);
 		System.out.println("Reset Password");
 		OperationResult result = new OperationResult(OPERATION_RESET_PASSWORD);
 		ProtectedStringType password = new ProtectedStringType();
@@ -295,13 +296,13 @@ public class PageForgetPassword extends PageBase {
 		PolyString emailAddress = new PolyString(username, username);
 		List<ObjectFilter> filters = new ArrayList<ObjectFilter>();
 
-		EqualsFilter filter;
+		EqualFilter filter;
 		PageBase page = (PageBase) getPage();
 
 		ModelService model = page.getModelService();
 		try {
-			filters.add(EqualsFilter.createEqual(UserType.F_NAME, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,username));
-			filters.add(EqualsFilter.createEqual(UserType.F_EMAIL_ADDRESS, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,email));
+			filters.add(EqualFilter.createEqual(UserType.F_NAME, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,username));
+			filters.add(EqualFilter.createEqual(UserType.F_EMAIL_ADDRESS, UserType.class,getPrismContext(),PolyStringOrigMatchingRule.NAME,email));
 
 			ObjectQuery query = new ObjectQuery().createObjectQuery(AndFilter.createAnd(filters));
 
