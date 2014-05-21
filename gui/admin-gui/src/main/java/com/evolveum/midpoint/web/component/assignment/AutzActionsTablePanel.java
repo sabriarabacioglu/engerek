@@ -41,7 +41,7 @@ import com.evolveum.midpoint.web.component.menu.cog.InlineMenuItemAction;
 import com.evolveum.midpoint.web.component.util.ListDataProvider;
 import com.evolveum.midpoint.web.component.util.LoadableModel;
 import com.evolveum.midpoint.web.component.util.SimplePanel;
-import com.evolveum.midpoint.web.page.admin.users.component.AssignablePopupContent;
+import com.evolveum.midpoint.web.component.assignment.AssignableAuthActionsPopup;
 import com.evolveum.midpoint.web.page.admin.users.dto.UserDtoStatus;
 import com.evolveum.midpoint.web.page.admin.users.dto.UserListItemDto;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
@@ -68,7 +68,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *  @author shood
+ *  @author arda
  * */
 public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>>{
 
@@ -84,8 +84,8 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     private static final String ID_MENU = "autzActionsMenu";
     private static final String ID_LIST = "autzActionList";
     // private static final String ID_ROW = "autzActionEditor";
-    // private static final String ID_MODAL_ASSIGN = "actionsPopup";
-     private static final String ID_MODAL_DELETE_AUTHORIZATION = "deleteAutzPopup";
+    private static final String ID_MODAL_ACTIONS_ASSIGN = "autzActionsPopup";
+    private static final String ID_MODAL_DELETE_AUTHORIZATION = "deleteAutzPopup";
  
 
     public AutzActionsTablePanel(String id, IModel<List<AutzActionsTableDto>> model){
@@ -187,6 +187,17 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     }
     
     private void initModalWindows(){
+    	ModalWindow assignActionsWindow = createModalWindow(ID_MODAL_ACTIONS_ASSIGN,
+                createStringResource("AutzActionsTablePanel.modal.title.selectActions"), 1100, 520);
+    	assignActionsWindow.setContent(new AssignableAuthActionsPopup(assignActionsWindow.getContentId()){ 
+//				@Override
+//   			protected void addPerformed(AjaxRequestTarget target, List<ObjectType> selected){
+//            		addSelectedAssignablePerformed(target, selected);
+//				}
+       		       	 	 
+        });
+    	add(assignActionsWindow);
+    	
     	ModalWindow deleteDialog = new ConfirmationDialog(ID_MODAL_DELETE_AUTHORIZATION,
                 createStringResource("AutzActionsTablePanel.modal.title.confirmDeletion"),
                 new AbstractReadOnlyModel<String>() {

@@ -96,7 +96,6 @@ public class PageRole extends PageAdminRoles{
 
     private IModel<PrismObject<RoleType>> model;
     private IModel<List<AutzActionsTableDto>> selected_autz;
-    private IModel<List<AutzActionsTableDto>> authorizations_list;
 
     public PageRole(){
 
@@ -138,18 +137,7 @@ public class PageRole extends PageAdminRoles{
         	}
         };
         
-        authorizations_list = new LoadableModel<List<AutzActionsTableDto>>(false){
-        	@Override
-        	protected List<AutzActionsTableDto> load() {
-        		Collection<DisplayableValue<String>> collection = (Collection<DisplayableValue<String>>) getModelInteractionService().getActionUrls();
-        		List<AutzActionsTableDto> listOfActions= new ArrayList();
-        		for (DisplayableValue<String> tr : collection){
-        			listOfActions.add(new AutzActionsTableDto(tr.getLabel(),tr.getDescription(),tr.getValue()));
-        		}
-        		return listOfActions;
-        	}
-        	
-        };
+        
        
         initLayout();
     }
