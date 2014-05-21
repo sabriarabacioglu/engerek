@@ -316,7 +316,7 @@ public class PasswordPolicyValidatorTest {
 		ValuePolicyType pp = (ValuePolicyType) PrismTestUtil.parseObject(file).asObjectable();
 
 		OperationResult op = new OperationResult("Generator testing");
-
+		
 		// String pswd = PasswordPolicyUtils.generatePassword(pp, op);
 		// LOGGER.info("Generated password: " + pswd);
 		// assertNotNull(pswd);
