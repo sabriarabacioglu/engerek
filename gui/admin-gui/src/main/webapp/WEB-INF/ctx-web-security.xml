@@ -36,9 +36,6 @@ http://www.springframework.org/schema/security/spring-security-3.1.xsd">
     <http pattern="/wicket/resource/**" security="none"/>
 
     <http create-session="never" auto-config="true" use-expressions="false" access-decision-manager-ref="accessDecisionManager">
-<!--         todo move reports to WEB-INF or even better probably to midpoint.home folder -->
-        <intercept-url pattern="/reports/**" access="denyAll"/>
-
         <intercept-url pattern="/j_spring_security_check" />
         <intercept-url pattern="/spring_security_login" />
 
@@ -48,9 +45,7 @@ http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 
         <intercept-url pattern="/admin/**" access="isFullyAuthenticated()"/>  <!--  access="isAuthenticated()"/> -->
 
-        <logout logout-url="/j_spring_security_logout" invalidate-session="true"
-
-                success-handler-ref="logoutHandler" />
+        <logout logout-url="/j_spring_security_logout" invalidate-session="true" success-handler-ref="logoutHandler" />
         <session-management>
             <concurrency-control max-sessions="1" error-if-maximum-exceeded="true"/>
         </session-management>
@@ -66,7 +61,9 @@ http://www.springframework.org/schema/security/spring-security-3.1.xsd">
     	<beans:constructor-arg name="securityEnforcer" ref="securityEnforcer"/>
     </beans:bean>
     
-    <beans:bean id="logoutHandler" class="com.evolveum.midpoint.web.security.AuditedLogoutHandler" />
+    <beans:bean id="logoutHandler" class="com.evolveum.midpoint.web.security.AuditedLogoutHandler">
+        <beans:property name="defaultTargetUrl" value="/"/>
+    </beans:bean>
 
     <beans:bean id="midPointAuthenticationProvider"
                 class="com.evolveum.midpoint.web.security.MidPointAuthenticationProvider">

@@ -255,12 +255,12 @@ public class StartupConfiguration implements MidpointConfiguration {
             Configuration info = new PropertiesConfiguration("midpoint.info");
             DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss.SSS");
             LOGGER.info("+--------------------------------------------------------------------------------------------+");
-            LOGGER.info("|             _    | |  _  \\     _     _| |_");
-            LOGGER.info("|   ___ ____ (_) __| | |_) |___ (_)___|_   _|");
-            LOGGER.info("|  |  _ ` _ `| |/ _  |  __/  _ \\| |  _` | |");
-            LOGGER.info("|  | | | | | | | (_| | |  | (_) | | | | | |_");
-            LOGGER.info("|  |_| |_| |_|_|\\____|_|  \\____/|_|_| |_|\\__|  from Evolveum.com");
-            LOGGER.info("|");
+            LOGGER.info("___________                                    __    | ");
+            LOGGER.info("\\_   _____/ ____    ____   ___________   ____ |  | __| ");
+            LOGGER.info(" |    __)_ /    \\  / ___\\_/ __ \\_  __ \\_/ __ \\|  |/ /| ");
+            LOGGER.info(" |        \\   |  \\/ /_/  >  ___/|  | \\/\\  ___/|    < | ");
+            LOGGER.info("/_______  /___|  /\\___  / \\___  >__|    \\___  >__|_ \\| powered by Midpoint  from Evolveum.com & Biznet.com.tr supported by Ulakbim TR");
+            LOGGER.info("        \\/     \\//_____/      \\/            \\/     \\/|");
             LOGGER.info("|  Licensed under the Apache License, Version 2.0 see: http://www.apache.org/licenses/LICENSE-2.0");
             LOGGER.info("|  Version :  " + info.getString("midpoint.version"));
 //			try {
@@ -269,9 +269,9 @@ public class StartupConfiguration implements MidpointConfiguration {
 //			} catch (NumberFormatException ex) {
 //				LOGGER.info("|  Build   :  " + info.getString("midpoint.build"));
 //			}
-            LOGGER.info("|  Sources :  " + info.getString("midpoint.scm") + "  branch:  " + info.getString("midpoint.branch"));
-            LOGGER.info("|  Bug reporting system : " + info.getString("midpoint.jira"));
-            LOGGER.info("|  Product information : http://wiki.evolveum.com/display/midPoint");
+         //   LOGGER.info("|  Sources :  " + info.getString("midpoint.scm") + "  branch:  " + info.getString("midpoint.branch"));
+         //   LOGGER.info("|  Bug reporting system : " + info.getString("midpoint.jira"));
+          //  LOGGER.info("|  Product information : http://wiki.evolveum.com/display/midPoint");
             LOGGER.info("+---------------------------------------------------------------------------------------------+");
         } catch (ConfigurationException e) {
             //NOTHING just skip

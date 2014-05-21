@@ -100,8 +100,7 @@ This resource definition contains only the very basic definitions for midPoint t
         -->
 
 		<schemaHandling>
-			<accountType>
-				<name>default</name>
+			<objectType>
 				<displayName>Default Account</displayName>
 				<default>true</default>
 				<objectClass>ri:AccountObjectClass</objectClass>
@@ -196,7 +195,7 @@ This resource definition contains only the very basic definitions for midPoint t
 						<outbound/>
 				    </password>
 				</credentials>
-			</accountType>
+			</objectType>
 		</schemaHandling>
 		<scripts>
 			<script>

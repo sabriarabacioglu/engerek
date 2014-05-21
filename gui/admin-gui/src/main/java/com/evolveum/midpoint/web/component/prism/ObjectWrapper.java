@@ -85,6 +85,10 @@ public class ObjectWrapper implements Serializable {
 
     private OperationResult result;
     private boolean protectedAccount;
+    
+    private List<PrismProperty> associations;
+
+    private OperationResult fetchResult;
 
     public ObjectWrapper(String displayName, String description, PrismObject object, ContainerStatus status) {
 		Validate.notNull(object, "Object must not be null.");
@@ -97,6 +101,22 @@ public class ObjectWrapper implements Serializable {
 
         createContainers();
 	}
+
+    public List<PrismProperty> getAssociations() {
+		return associations;
+	}
+    
+    public void setAssociations(List<PrismProperty> associations) {
+		this.associations = associations;
+	}
+    
+    public OperationResult getFetchResult() {
+        return fetchResult;
+    }
+
+    public void setFetchResult(OperationResult fetchResult) {
+        this.fetchResult = fetchResult;
+    }
 
     public OperationResult getResult() {
         return result;
@@ -253,6 +273,11 @@ public class ObjectWrapper implements Serializable {
 				if (ShadowType.class.isAssignableFrom(clazz) &&
 						hasResourceCapability(((ShadowType) object.asObjectable()).getResource(), CredentialsCapabilityType.class)) {
 					containers.addAll(createCustomContainerWrapper(object, ShadowType.F_CREDENTIALS));
+				}
+				
+				PrismContainer<ShadowAssociationType> associationContainer = object.findContainer(ShadowType.F_ASSOCIATION);
+				if (associationContainer != null){
+					containers.addAll(createCustomContainerWrapper(object, ShadowType.F_ASSOCIATION));
 				}
             } else if (ResourceType.class.isAssignableFrom(clazz)) {
                 containers =  createResourceContainers();
@@ -453,7 +478,7 @@ public class ObjectWrapper implements Serializable {
 
 						if (object.asObjectable() instanceof ShadowType
                                 && (((ShadowType) object.asObjectable()).getActivation() == null
-                                || ((ShadowType) object.asObjectable()).getActivation().isEnabled() == null)) {
+                                || ((ShadowType) object.asObjectable()).getActivation().getAdministrativeStatus() == null)) {
 
 							if (!hasResourceCapability(((ShadowType) object.asObjectable()).getResource(), ActivationCapabilityType.class)){
 								continue;
