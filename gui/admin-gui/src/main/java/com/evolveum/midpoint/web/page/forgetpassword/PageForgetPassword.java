@@ -221,37 +221,46 @@ public class PageForgetPassword extends PageBase {
 		System.out.println("Reset Password1");
 		OperationResult result = new OperationResult(OPERATION_RESET_PASSWORD);
 		ProtectedStringType password = new ProtectedStringType();
-	    Collection<SelectorOptions<GetOperationOptions>> options =
+		Collection<SelectorOptions<GetOperationOptions>> options =
                 SelectorOptions.createCollection(GetOperationOptions.createResolve(),
-                        SystemConfigurationType.F_DEFAULT_USER_TEMPLATE ,SystemConfigurationType.F_GLOBAL_SECURITY_POLICY_REF);
+                        SystemConfigurationType.F_DEFAULT_USER_TEMPLATE ,SystemConfigurationType.F_GLOBAL_PASSWORD_POLICY);
 	    System.out.println("Reset Password2");
 		PrismObject<SystemConfigurationType> systemConfig;
 		String newPassword="";
 		PageBase page = (PageBase) getPage();
-
+ 
 		ModelService model = page.getModelService();
 		try {
 			System.out.println("getModel");
 			systemConfig = model.getObject(SystemConfigurationType.class,
 			        SystemObjectsType.SYSTEM_CONFIGURATION.value(), options, task, result);
-			newPassword=ValuePolicyGenerator.generate(systemConfig.asObjectable().getGlobalPasswordPolicy().getStringPolicy(), systemConfig.asObjectable().getGlobalPasswordPolicy().getStringPolicy().getLimitations().getMinLength(), result);
+			
+			PrismObject<ValuePolicyType> valPolicy =model.getObject(ValuePolicyType.class, systemConfig.asObjectable().getGlobalPasswordPolicyRef().getOid(), options, task, result);
+			
+			newPassword=ValuePolicyGenerator.generate(valPolicy.asObjectable().getStringPolicy(), valPolicy.asObjectable().getStringPolicy().getLimitations().getMinLength(), result);
+			
 			System.out.println("Reset Password3");
 		} catch (ObjectNotFoundException e1) {
 			// TODO Auto-generated catch block
+			System.out.println("hata1");
 			System.out.println(e1);
 		} catch (SchemaException e1) {
 			System.out.println(e1);
+			System.out.println("hata2");
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} catch (SecurityViolationException e1) {
 			System.out.println(e1);
+			System.out.println("hata3");
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} catch (CommunicationException e1) {
+			System.out.println("hata4");
 			System.out.println(e1);
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		} catch (ConfigurationException e1) {
+			System.out.println("hata");
 			System.out.println(e1);
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
