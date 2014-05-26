@@ -172,7 +172,7 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     	assignActionsWindow.setContent(new AssignableAuthActionsPopup(assignActionsWindow.getContentId()){ 
     		@Override
    			protected void addPerformed(AjaxRequestTarget target, List<AutzActionsTableDto> selected){
-//            		addSelectedAssignablePerformed(target, selected);
+    				addSelectedAssignableActionsPerformed(target, selected);
 			}
        		       	 	 
         });
@@ -189,10 +189,10 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
                     }
                 }) {
 
-            @Override
-            public void yesPerformed(AjaxRequestTarget target){
-                close(target);
-                deleteAuthorizationConfirmedPerformed(target, getSelectedAuthorizations());
+            		@Override
+            		public void yesPerformed(AjaxRequestTarget target){
+            		close(target);
+            		deleteAuthorizationConfirmedPerformed(target, getSelectedAuthorizations());
             }
         };
         add(deleteDialog);
@@ -234,6 +234,24 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
 	  window.show(target);
   }
     
+  
+  private void addSelectedAssignableActionsPerformed(AjaxRequestTarget target, List<AutzActionsTableDto> toAdd){
+      ModalWindow window = (ModalWindow) get(ID_MODAL_ACTIONS_ASSIGN);
+      window.close(target);
+
+      if(toAdd.isEmpty()){
+          warn(getString("AutzActionsTablePanel.message.noAssignmentSelected"));
+          target.add(getPageBase().getFeedbackPanel());
+          return;
+      }
+      else{
+    	  List<AutzActionsTableDto> authActions = getModel().getObject();
+    	  authActions.addAll(toAdd);
+    	  target.add(getPageBase().getFeedbackPanel(), get(ID_AUTZACTIONS));
+      }
+      
+  }
+  
     
   private void showAssignableAuthorizationPopupPerformed(AjaxRequestTarget target){
       ModalWindow modal = (ModalWindow) get(ID_MODAL_ACTIONS_ASSIGN);
