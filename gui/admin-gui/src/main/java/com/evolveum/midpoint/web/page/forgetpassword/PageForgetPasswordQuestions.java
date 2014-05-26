@@ -93,7 +93,8 @@ public class PageForgetPasswordQuestions extends PageBase {
 				PrismObject<SystemConfigurationType> systemConfig = getModelService().getObject(SystemConfigurationType.class,
 				        SystemObjectsType.SYSTEM_CONFIGURATION.value(), options, task, result);
 				
-				System.out.println(systemConfig.asObjectable().getGlobalSecurityPolicyRef().getOid());
+				System.out.println(systemConfig.asObjectable().getGlobalPasswordPolicy());
+				
 			} catch (ObjectNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -1,6 +1,7 @@
 package com.evolveum.midpoint.web.page.forgetpassword;
 
 
+import com.evolveum.midpoint.common.policy.ValuePolicyGenerator;
 import com.evolveum.midpoint.model.api.ModelService;
 import com.evolveum.midpoint.web.application.PageDescriptor;
 import com.evolveum.midpoint.model.api.PolicyViolationException;
@@ -66,10 +67,17 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.RoleType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.SecurityQuestionAnswerType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.SecurityQuestionsCredentialsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ShadowType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.SystemObjectsType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.TaskType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.UserType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.ValuePolicyType;
 import com.evolveum.prism.xml.ns._public.types_3.PolyStringType;
 import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
+
+
+
+
 
 
 
@@ -88,6 +96,7 @@ import org.apache.wicket.markup.html.form.RequiredTextField;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
+import org.jruby.RubyProcess.Sys;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -157,7 +166,7 @@ public class PageForgetPassword extends PageBase {
 					MidPointPrincipal principal=getSecurityEnforcer().getUserProfileService().getPrincipal("administrator");
 					Authentication authentication = new PreAuthenticatedAuthenticationToken(principal, null);
 					getSecurityEnforcer().setupPreAuthenticatedSecurityContext(authentication);
-
+					
 
 				} catch (ObjectNotFoundException e) {
 					// TODO Auto-generated catch block
@@ -172,13 +181,13 @@ public class PageForgetPassword extends PageBase {
 				if(user!=null){
 					//If the parameters are ok reset the password
 					System.out.println("Reset Password User var.");
-					PageParameters parameters = new PageParameters();
-					PageForgetPasswordQuestions pageForgetPasswordQuestions =new PageForgetPasswordQuestions();
-					pageForgetPasswordQuestions.setUserTypeObject(user);
+			//		PageParameters parameters = new PageParameters();
+				//	PageForgetPasswordQuestions pageForgetPasswordQuestions =new PageForgetPasswordQuestions();
+			//		pageForgetPasswordQuestions.setUserTypeObject(user);
 
-					setResponsePage(pageForgetPasswordQuestions);
+			//		setResponsePage(pageForgetPasswordQuestions);
 
-
+					resetPassword(user);
 
 
 				}
@@ -206,18 +215,65 @@ public class PageForgetPassword extends PageBase {
 
 
 	private void resetPassword(UserType user){
-
+		
 
 		Task task = createSimpleTask(OPERATION_RESET_PASSWORD);
-		System.out.println("Reset Password");
+		System.out.println("Reset Password1");
 		OperationResult result = new OperationResult(OPERATION_RESET_PASSWORD);
 		ProtectedStringType password = new ProtectedStringType();
-		password.setClearValue("Qwerty123");
+		Collection<SelectorOptions<GetOperationOptions>> options =
+                SelectorOptions.createCollection(GetOperationOptions.createResolve(),
+                        SystemConfigurationType.F_DEFAULT_USER_TEMPLATE ,SystemConfigurationType.F_GLOBAL_PASSWORD_POLICY);
+	    System.out.println("Reset Password2");
+		PrismObject<SystemConfigurationType> systemConfig;
+		String newPassword="";
+		PageBase page = (PageBase) getPage();
+ 
+		ModelService model = page.getModelService();
+		try {
+			System.out.println("getModel");
+			systemConfig = model.getObject(SystemConfigurationType.class,
+			        SystemObjectsType.SYSTEM_CONFIGURATION.value(), options, task, result);
+			
+			PrismObject<ValuePolicyType> valPolicy =model.getObject(ValuePolicyType.class, systemConfig.asObjectable().getGlobalPasswordPolicyRef().getOid(), options, task, result);
+			
+			newPassword=ValuePolicyGenerator.generate(valPolicy.asObjectable().getStringPolicy(), valPolicy.asObjectable().getStringPolicy().getLimitations().getMinLength(), result);
+			
+			System.out.println("Reset Password3");
+		} catch (ObjectNotFoundException e1) {
+			// TODO Auto-generated catch block
+			System.out.println("hata1");
+			System.out.println(e1);
+		} catch (SchemaException e1) {
+			System.out.println(e1);
+			System.out.println("hata2");
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (SecurityViolationException e1) {
+			System.out.println(e1);
+			System.out.println("hata3");
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (CommunicationException e1) {
+			System.out.println("hata4");
+			System.out.println(e1);
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (ConfigurationException e1) {
+			System.out.println("hata");
+			System.out.println(e1);
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		
+		System.out.println("Passs:"+newPassword);
+		password.setClearValue(newPassword);
 
 		WebMiscUtil.encryptProtectedString(password, true, getMidpointApplication());
 		final ItemPath valuePath = new ItemPath(SchemaConstantsGenerated.C_CREDENTIALS,
 				CredentialsType.F_PASSWORD, PasswordType.F_VALUE);
-		System.out.println("Reset Password2");
+		System.out.println("Reset Password4");
 		SchemaRegistry registry = getPrismContext().getSchemaRegistry();
 		Collection<ObjectDelta<? extends ObjectType>> deltas = new ArrayList<ObjectDelta<? extends ObjectType>>();
 		PrismObjectDefinition objDef= registry.findObjectDefinitionByCompileTimeClass(UserType.class);
@@ -227,7 +283,7 @@ public class PageForgetPassword extends PageBase {
 
 		deltas.add(ObjectDelta.createModifyDelta(user.getOid(), delta, type, getPrismContext()));
 		try {
-			System.out.println("Reset Password3");
+			System.out.println("Reset Password5");
 			getModelService().executeChanges(deltas, null, task, result);
 		} catch (ObjectAlreadyExistsException e) {
 			// TODO Auto-generated catch block
