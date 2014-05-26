@@ -119,25 +119,7 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
 //        return target;
 //    }
 
-//      private void initPanelLayout (IModel<String> labelModel){
-//    	  final WebMarkupContainer autzActions = new WebMarkupContainer(ID_AUTZACTIONS);
-//    	  autzActions.setOutputMarkupId(true);
-//    	  add(autzActions);
-    	  
-//    	  Label label = new Label(ID_HEADER,labelModel);
-//    	  autzActions.add(label);
-    	  
-//    	  InlineMenu autzMenu = new InlineMenu(ID_MENU, new Model(Serializable) createAutzMenu()));
-//    	  autzActions.add(autzMenu);
-    	  
-//    	  ListView<AutzActionsTableDto> list = new ListView<AutzActionsTableDto>(ID_LIST,ASSOCIATED_ROLES_MODEL){
-//    		  @Override
-//              protected void populateItem(ListItem<AutzActionsTableDto> item) {
-//              ///get the authorizations list
-//              item.add(label);
-//    	  };
-    	  
-//      }
+
     private void initPanelLayout(){
     	ListDataProvider lp = new ListDataProvider(this,getModel());
     	
@@ -153,7 +135,8 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
 
                      @Override
                      public void onClick(AjaxRequestTarget target){
-                         //showAssignablePopupPerformed(target, ResourceType.class);
+                    	 showAssignableAuthorizationPopupPerformed(target);
+                         
                      }
                  });
          items.add(item);
@@ -171,9 +154,6 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
          items.add(item);
     	
     	
-    	
-
-    	
     	List<IColumn<AutzActionsTableDto, String>> columns = new ArrayList<IColumn<AutzActionsTableDto, String>>();
     	
     	columns.add(new CheckBoxHeaderColumn());		
@@ -181,7 +161,7 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     	columns.add(new PropertyColumn<AutzActionsTableDto,String>(createStringResource("AutzActionsTablePanel.column.aURI"),"authURI"));
     		
     	TablePanel roleAuthorizations = new TablePanel(ID_AUTZACTIONS,lp,columns);
-    	roleAuthorizations.setOutputMarkupId(true); //AJAX refresh için
+    	roleAuthorizations.setOutputMarkupId(true); //AJAX refresh 
     	add(roleAuthorizations);	
     	
     }
@@ -190,10 +170,10 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     	ModalWindow assignActionsWindow = createModalWindow(ID_MODAL_ACTIONS_ASSIGN,
                 createStringResource("AutzActionsTablePanel.modal.title.selectActions"), 1100, 520);
     	assignActionsWindow.setContent(new AssignableAuthActionsPopup(assignActionsWindow.getContentId()){ 
-//				@Override
-//   			protected void addPerformed(AjaxRequestTarget target, List<ObjectType> selected){
+    		@Override
+   			protected void addPerformed(AjaxRequestTarget target, List<AutzActionsTableDto> selected){
 //            		addSelectedAssignablePerformed(target, selected);
-//				}
+			}
        		       	 	 
         });
     	add(assignActionsWindow);
@@ -249,6 +229,21 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     	
     }
     
+  private void showModalWindow(String id, AjaxRequestTarget target){
+	  ModalWindow window = (ModalWindow) get(id);
+	  window.show(target);
+  }
+    
+    
+  private void showAssignableAuthorizationPopupPerformed(AjaxRequestTarget target){
+      ModalWindow modal = (ModalWindow) get(ID_MODAL_ACTIONS_ASSIGN);
+      AssignableAuthActionsPopup  content = (AssignableAuthActionsPopup)modal.get(modal.getContentId());
+      showModalWindow(ID_MODAL_ACTIONS_ASSIGN, target);
+  }
+
+}
+    
+  
 //        final WebMarkupContainer assignments = new WebMarkupContainer(ID_ASSIGNMENTS);
 //        assignments.setOutputMarkupId(true);
 //        add(assignments);
@@ -628,4 +623,4 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
 //        assignment.getConstruction().setResourceRef(ref);
 //        assignment.getConstruction().setResource(null);
 //    }
-}
+
