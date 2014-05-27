@@ -41,7 +41,7 @@ import com.evolveum.midpoint.web.component.menu.cog.InlineMenuItemAction;
 import com.evolveum.midpoint.web.component.util.ListDataProvider;
 import com.evolveum.midpoint.web.component.util.LoadableModel;
 import com.evolveum.midpoint.web.component.util.SimplePanel;
-import com.evolveum.midpoint.web.page.admin.users.component.AssignablePopupContent;
+import com.evolveum.midpoint.web.component.assignment.AssignableAuthActionsPopup;
 import com.evolveum.midpoint.web.page.admin.users.dto.UserDtoStatus;
 import com.evolveum.midpoint.web.page.admin.users.dto.UserListItemDto;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
@@ -68,7 +68,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *  @author shood
+ *  @author arda
  * */
 public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>>{
 
@@ -84,8 +84,8 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     private static final String ID_MENU = "autzActionsMenu";
     private static final String ID_LIST = "autzActionList";
     // private static final String ID_ROW = "autzActionEditor";
-    // private static final String ID_MODAL_ASSIGN = "actionsPopup";
-     private static final String ID_MODAL_DELETE_AUTHORIZATION = "deleteAutzPopup";
+    private static final String ID_MODAL_ACTIONS_ASSIGN = "autzActionsPopup";
+    private static final String ID_MODAL_DELETE_AUTHORIZATION = "deleteAutzPopup";
  
 
     public AutzActionsTablePanel(String id, IModel<List<AutzActionsTableDto>> model){
@@ -119,25 +119,7 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
 //        return target;
 //    }
 
-//      private void initPanelLayout (IModel<String> labelModel){
-//    	  final WebMarkupContainer autzActions = new WebMarkupContainer(ID_AUTZACTIONS);
-//    	  autzActions.setOutputMarkupId(true);
-//    	  add(autzActions);
-    	  
-//    	  Label label = new Label(ID_HEADER,labelModel);
-//    	  autzActions.add(label);
-    	  
-//    	  InlineMenu autzMenu = new InlineMenu(ID_MENU, new Model(Serializable) createAutzMenu()));
-//    	  autzActions.add(autzMenu);
-    	  
-//    	  ListView<AutzActionsTableDto> list = new ListView<AutzActionsTableDto>(ID_LIST,ASSOCIATED_ROLES_MODEL){
-//    		  @Override
-//              protected void populateItem(ListItem<AutzActionsTableDto> item) {
-//              ///get the authorizations list
-//              item.add(label);
-//    	  };
-    	  
-//      }
+
     private void initPanelLayout(){
     	ListDataProvider lp = new ListDataProvider(this,getModel());
     	
@@ -153,7 +135,8 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
 
                      @Override
                      public void onClick(AjaxRequestTarget target){
-                         //showAssignablePopupPerformed(target, ResourceType.class);
+                    	 showAssignableAuthorizationPopupPerformed(target);
+                         
                      }
                  });
          items.add(item);
@@ -171,9 +154,6 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
          items.add(item);
     	
     	
-    	
-
-    	
     	List<IColumn<AutzActionsTableDto, String>> columns = new ArrayList<IColumn<AutzActionsTableDto, String>>();
     	
     	columns.add(new CheckBoxHeaderColumn());		
@@ -181,12 +161,23 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     	columns.add(new PropertyColumn<AutzActionsTableDto,String>(createStringResource("AutzActionsTablePanel.column.aURI"),"authURI"));
     		
     	TablePanel roleAuthorizations = new TablePanel(ID_AUTZACTIONS,lp,columns);
-    	roleAuthorizations.setOutputMarkupId(true); //AJAX refresh için
+    	roleAuthorizations.setOutputMarkupId(true); //AJAX refresh 
     	add(roleAuthorizations);	
     	
     }
     
     private void initModalWindows(){
+    	ModalWindow assignActionsWindow = createModalWindow(ID_MODAL_ACTIONS_ASSIGN,
+                createStringResource("AutzActionsTablePanel.modal.title.selectActions"), 1100, 520);
+    	assignActionsWindow.setContent(new AssignableAuthActionsPopup(assignActionsWindow.getContentId()){ 
+    		@Override
+   			protected void addPerformed(AjaxRequestTarget target, List<AutzActionsTableDto> selected){
+    				addSelectedAssignableActionsPerformed(target, selected);
+			}
+       		       	 	 
+        });
+    	add(assignActionsWindow);
+    	
     	ModalWindow deleteDialog = new ConfirmationDialog(ID_MODAL_DELETE_AUTHORIZATION,
                 createStringResource("AutzActionsTablePanel.modal.title.confirmDeletion"),
                 new AbstractReadOnlyModel<String>() {
@@ -198,10 +189,10 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
                     }
                 }) {
 
-            @Override
-            public void yesPerformed(AjaxRequestTarget target){
-                close(target);
-                deleteAuthorizationConfirmedPerformed(target, getSelectedAuthorizations());
+            		@Override
+            		public void yesPerformed(AjaxRequestTarget target){
+            		close(target);
+            		deleteAuthorizationConfirmedPerformed(target, getSelectedAuthorizations());
             }
         };
         add(deleteDialog);
@@ -238,6 +229,39 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
     	
     }
     
+  private void showModalWindow(String id, AjaxRequestTarget target){
+	  ModalWindow window = (ModalWindow) get(id);
+	  window.show(target);
+  }
+    
+  
+  private void addSelectedAssignableActionsPerformed(AjaxRequestTarget target, List<AutzActionsTableDto> toAdd){
+      ModalWindow window = (ModalWindow) get(ID_MODAL_ACTIONS_ASSIGN);
+      window.close(target);
+
+      if(toAdd.isEmpty()){
+          warn(getString("AutzActionsTablePanel.message.noAssignmentSelected"));
+          target.add(getPageBase().getFeedbackPanel());
+          return;
+      }
+      else{
+    	  List<AutzActionsTableDto> authActions = getModel().getObject();
+    	  authActions.addAll(toAdd);
+    	  target.add(getPageBase().getFeedbackPanel(), get(ID_AUTZACTIONS));
+      }
+      
+  }
+  
+    
+  private void showAssignableAuthorizationPopupPerformed(AjaxRequestTarget target){
+      ModalWindow modal = (ModalWindow) get(ID_MODAL_ACTIONS_ASSIGN);
+      AssignableAuthActionsPopup  content = (AssignableAuthActionsPopup)modal.get(modal.getContentId());
+      showModalWindow(ID_MODAL_ACTIONS_ASSIGN, target);
+  }
+
+}
+    
+  
 //        final WebMarkupContainer assignments = new WebMarkupContainer(ID_ASSIGNMENTS);
 //        assignments.setOutputMarkupId(true);
 //        add(assignments);
@@ -617,4 +641,4 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
 //        assignment.getConstruction().setResourceRef(ref);
 //        assignment.getConstruction().setResource(null);
 //    }
-}
+
