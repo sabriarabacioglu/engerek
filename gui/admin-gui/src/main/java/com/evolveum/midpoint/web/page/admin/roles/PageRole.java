@@ -18,6 +18,8 @@ package com.evolveum.midpoint.web.page.admin.roles;
 import com.evolveum.midpoint.prism.PrismObject;
 import com.evolveum.midpoint.model.api.ModelService;
 import com.evolveum.midpoint.prism.*;
+import com.evolveum.midpoint.prism.delta.ContainerDelta;
+import com.evolveum.midpoint.prism.delta.ItemDelta;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.path.ItemPath;
 import com.evolveum.midpoint.prism.schema.SchemaRegistry;
@@ -351,6 +353,9 @@ public class PageRole extends PageAdminRoles{
                 AssignmentTablePanel inducementPanel = (AssignmentTablePanel)get(createComponentPath(ID_MAIN_FORM, ID_INDUCEMENTS));
                 inducementPanel.handleAssignmentsWhenAdd(newRole, inducementDef, newRole.asObjectable().getInducement());
 
+                AutzActionsTablePanel autzPanel = (AutzActionsTablePanel)get(createComponentPath(ID_MAIN_FORM, "autzActionsPanel"));
+                PrismContainer autzContainer = autzPanel.createAuthorizationsContainer(getPrismContext());
+                newRole.add(autzContainer);
             } else {
                 PrismObject<RoleType> oldRole = WebModelUtils.loadObject(RoleType.class, newRole.getOid(), result, this);
                 if (oldRole != null) {
@@ -367,6 +372,21 @@ public class PageRole extends PageAdminRoles{
                     PrismContainerDefinition inducementDef = objectDefinition.findContainerDefinition(RoleType.F_INDUCEMENT);
                     AssignmentTablePanel inducementPanel = (AssignmentTablePanel)get(createComponentPath(ID_MAIN_FORM, ID_INDUCEMENTS));
                     inducementPanel.handleAssignmentDeltas(delta, inducementDef, RoleType.F_INDUCEMENT);
+                    
+                    AutzActionsTablePanel autzPanel = (AutzActionsTablePanel)get(createComponentPath(ID_MAIN_FORM, "autzActionsPanel"));
+                    PrismContainer autzContainerNew = autzPanel.createAuthorizationsContainer(getPrismContext());
+                    
+                    PrismContainer autzContainerOld = oldRole.findContainer(RoleType.F_AUTHORIZATION);
+                    if (autzContainerOld == null) {
+                    	ContainerDelta d = ContainerDelta.createDelta(RoleType.F_AUTHORIZATION, RoleType.class, getPrismContext());
+                    	d.addValuesToAdd(autzContainerNew.getValues());
+                    	delta.addModification(d);
+                    } else {
+                    	Collection<ItemDelta> autzDelta = autzContainerOld.diff(autzContainerNew);
+                    	for (ItemDelta d : autzDelta) {
+                    		delta.addModification(d);
+                    	}
+                    }
                 }
             }
 

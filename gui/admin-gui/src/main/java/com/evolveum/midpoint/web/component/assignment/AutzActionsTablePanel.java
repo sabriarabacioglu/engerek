@@ -259,6 +259,23 @@ public class AutzActionsTablePanel extends SimplePanel<List<AutzActionsTableDto>
       showModalWindow(ID_MODAL_ACTIONS_ASSIGN, target);
   }
 
+  
+  public PrismContainer createAuthorizationsContainer(PrismContext prismContext) throws SchemaException {
+	  List<AutzActionsTableDto> list = getModel().getObject();
+	  
+	  //PrismContainer c = PrismContainer.newInstance(prismContext, AuthorizationType.COMPLEX_TYPE);
+	  PrismObjectDefinition objDef = prismContext.getSchemaRegistry().findObjectDefinitionByCompileTimeClass(RoleType.class);
+      PrismContainerDefinition cDef = objDef.findContainerDefinition(RoleType.F_AUTHORIZATION);
+      PrismContainer c = cDef.instantiate();
+	  
+	  for (AutzActionsTableDto dto : list) {
+		  PrismContainerValue value = c.createNewValue();
+		  PrismProperty action = value.createProperty(AuthorizationType.F_ACTION);
+		  action.addRealValue(dto.getAuthURI());
+	  }
+	  
+	  return c;
+  }
 }
     
   
