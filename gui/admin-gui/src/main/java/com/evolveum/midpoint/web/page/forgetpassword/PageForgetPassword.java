@@ -1,6 +1,5 @@
 package com.evolveum.midpoint.web.page.forgetpassword;
-
-
+import com.evolveum.midpoint.common.configuration.api.MidpointConfiguration;
 import com.evolveum.midpoint.common.policy.ValuePolicyGenerator;
 import com.evolveum.midpoint.model.api.ModelService;
 import com.evolveum.midpoint.web.application.PageDescriptor;
@@ -13,6 +12,8 @@ import com.evolveum.midpoint.prism.PrismObjectDefinition;
 import com.evolveum.midpoint.prism.PrismProperty;
 import com.evolveum.midpoint.prism.PrismReference;
 import com.evolveum.midpoint.prism.PrismReferenceValue;
+import com.evolveum.midpoint.prism.crypto.EncryptionException;
+import com.evolveum.midpoint.prism.crypto.Protector;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
 import com.evolveum.midpoint.prism.delta.PropertyDelta;
 import com.evolveum.midpoint.prism.match.PolyStringOrigMatchingRule;
@@ -60,6 +61,8 @@ import com.evolveum.midpoint.util.logging.Trace;
 import com.evolveum.midpoint.util.logging.TraceManager;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.AuthorizationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.CredentialsType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.MailConfigurationType;
+import com.evolveum.midpoint.xml.ns._public.common.common_3.MailServerConfigurationType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.ObjectType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.PasswordType;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.RoleType;
@@ -88,7 +91,28 @@ import com.evolveum.prism.xml.ns._public.types_3.ProtectedStringType;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import org.apache.commons.lang.StringUtils;
+import org.apache.tools.mail.MailMessage;
+import org.apache.wicket.RestartResponseException;
 import org.apache.wicket.atmosphere.EventBus;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.PasswordTextField;
@@ -103,10 +127,22 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
+
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 /**
  * @author sabria
@@ -133,6 +169,9 @@ public class PageForgetPassword extends PageBase {
 	private static final String OPERATION_LOAD_USER = DOT_CLASS + "loadUser";
 	private static final String OPERATION_RESET_PASSWORD = DOT_CLASS + "resetPassword";
 	private static final String OPERATION_LOAD_USER_WITH_ACCOUNTS = DOT_CLASS + "loadUserWithAccounts";
+	
+	@Autowired(required = true)
+	private transient Protector protector;
 
 
 
@@ -175,7 +214,7 @@ public class PageForgetPassword extends PageBase {
 
 
 				UserType user= checkUser(email.getModelObject(),username.getModelObject() );
-
+				
 
 				//Check if the email and the uid exists and matches in the idm
 				if(user!=null){
@@ -185,13 +224,17 @@ public class PageForgetPassword extends PageBase {
 				//	PageForgetPasswordQuestions pageForgetPasswordQuestions =new PageForgetPasswordQuestions();
 			//		pageForgetPasswordQuestions.setUserTypeObject(user);
 
-			//		setResponsePage(pageForgetPasswordQuestions);
+			setResponsePage(PageResetPasswordSuccess.class);
 
 					resetPassword(user);
-
+					
 
 				}
 				else{
+			
+					  getSession().error(getString("pageForgetPassword.message.usernotfound"));
+			            throw new RestartResponseException(PageForgetPassword.class);
+				 
 
 				}
 
@@ -225,7 +268,7 @@ public class PageForgetPassword extends PageBase {
                 SelectorOptions.createCollection(GetOperationOptions.createResolve(),
                         SystemConfigurationType.F_DEFAULT_USER_TEMPLATE ,SystemConfigurationType.F_GLOBAL_PASSWORD_POLICY);
 	    System.out.println("Reset Password2");
-		PrismObject<SystemConfigurationType> systemConfig;
+		PrismObject<SystemConfigurationType> systemConfig=null;
 		String newPassword="";
 		PageBase page = (PageBase) getPage();
  
@@ -234,7 +277,7 @@ public class PageForgetPassword extends PageBase {
 			System.out.println("getModel");
 			systemConfig = model.getObject(SystemConfigurationType.class,
 			        SystemObjectsType.SYSTEM_CONFIGURATION.value(), options, task, result);
-			
+			System.out.println(systemConfig.asObjectable().getNotificationConfiguration().getMail().getServer().get(0).getHost());
 			PrismObject<ValuePolicyType> valPolicy =model.getObject(ValuePolicyType.class, systemConfig.asObjectable().getGlobalPasswordPolicyRef().getOid(), options, task, result);
 			
 			newPassword=ValuePolicyGenerator.generate(valPolicy.asObjectable().getStringPolicy(), valPolicy.asObjectable().getStringPolicy().getLimitations().getMinLength(), result);
@@ -280,11 +323,16 @@ public class PageForgetPassword extends PageBase {
 
 		PropertyDelta delta = PropertyDelta.createModificationReplaceProperty(valuePath, objDef, password);
 		Class<? extends ObjectType> type =  UserType.class;
-
+		MailConfigurationType mailConfig= systemConfig.asObjectable().getNotificationConfiguration().getMail();
+		MailServerConfigurationType mailServerType=mailConfig.getServer().get(0);
+		
 		deltas.add(ObjectDelta.createModifyDelta(user.getOid(), delta, type, getPrismContext()));
 		try {
 			System.out.println("Reset Password5");
 			getModelService().executeChanges(deltas, null, task, result);
+			sendMailToUser(mailServerType.getUsername(), getMidpointApplication().getProtector().decryptString(mailServerType.getPassword()), newPassword, mailServerType.getHost(), mailServerType.getPort().toString(), mailConfig.getDefaultFrom(),user.getEmailAddress() );
+		//	MailMessage mailMessage=new MailMessage(, port);
+	//		mailTransport.send(mailMessage, transportName, task, parentResult);
 		} catch (ObjectAlreadyExistsException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -307,6 +355,9 @@ public class PageForgetPassword extends PageBase {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (SecurityViolationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (EncryptionException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -334,6 +385,75 @@ public class PageForgetPassword extends PageBase {
 	}
 
 
+	 public void sendMailToUser(final String userLogin,final String password, String newPassword,String host,String port,String sender,String receiver) {
+	        try {
+	         
+	           
+	            //prop.load(new FileInputStream("/u01/app/oracle/product/fmw/Roketsan_IAM/server/ScheduleTask/PropertyFiles/MailServer.properties"));
+
+	            
+	           
+
+	            System.out.println("host:" + host);
+	            System.out.println("port:" + port);
+	            System.out.println("sender:" + sender);
+	            System.out.println("receiver:" + receiver);
+	            System.out.println("Username:"+userLogin);
+	          
+	            Properties props = new Properties();
+	           
+	            props.put("mail.transport.protocol", "smtp");
+	            props.put("mail.smtp.auth", "true");
+	            props.put("mail.smtp.host", host);
+	            props.put("mail.smtp.port", port);
+	            props.put("mail.smtp.starttls.enable", "true");
+	           
+	            Session session = Session.getInstance(props,
+	          		  new javax.mail.Authenticator() {
+	          			protected PasswordAuthentication getPasswordAuthentication() {
+	          				return new PasswordAuthentication(userLogin, password);
+	          			}
+	          		  });
+	           
+	          		
+	           
+	          			Message message = new MimeMessage(session);
+	          		   message.setSubject("Engerek KYS Yeni Şifreniz");
+
+	   	            message.setText("User Login : " + userLogin + "\n Password : " + newPassword + "\n");
+	   	            message.setFrom(new InternetAddress(sender));
+	   	            message.addRecipient(Message.RecipientType.TO, new InternetAddress(receiver));
+	           
+	          			Transport.send(message);
+	           
+	          			System.out.println("Done");
+	          			
+	           
+	          
+	            /*
+	            Session mailSession = Session.getDefaultInstance(props);
+	            MimeMessage message = new MimeMessage(mailSession);
+
+	            message.setSubject("Engerek KYS Yeni Şifreniz");
+
+	            message.setText("User Login : " + userLogin + "\n Password : " + password + "\n");
+	            message.setFrom(new InternetAddress(sender));
+	            message.addRecipient(Message.RecipientType.TO, new InternetAddress(receiver));
+	            Transport transport = mailSession.getTransport();
+	            transport.connect();
+	            transport.sendMessage(message, message.getRecipients(Message.RecipientType.TO));
+	            transport.close();
+	            */
+	        } catch (MessagingException ex) {
+	            ex.printStackTrace();
+	    
+	            System.out.println("MessagingException");
+	        }
+	        
+	        
+	    }
+	
+	
 	//Checkd if the user exists with the given email and username in the idm 
 	public UserType checkUser(String email,String username){
 
