@@ -17,6 +17,7 @@
 package com.evolveum.midpoint.web.component.prism;
 
 import com.evolveum.midpoint.common.InternalsConfig;
+import com.evolveum.midpoint.common.refinery.RefinedObjectClassDefinition;
 import com.evolveum.midpoint.prism.*;
 import com.evolveum.midpoint.prism.delta.ChangeType;
 import com.evolveum.midpoint.prism.delta.ObjectDelta;
@@ -26,6 +27,7 @@ import com.evolveum.midpoint.prism.path.ItemPathSegment;
 import com.evolveum.midpoint.prism.path.NameItemPathSegment;
 import com.evolveum.midpoint.prism.polystring.PolyString;
 import com.evolveum.midpoint.prism.schema.PrismSchema;
+import com.evolveum.midpoint.provisioning.api.ResourceObjectChangeListener;
 import com.evolveum.midpoint.schema.constants.SchemaConstants;
 import com.evolveum.midpoint.schema.result.OperationResult;
 import com.evolveum.midpoint.schema.util.ConnectorTypeUtil;
@@ -89,8 +91,11 @@ public class ObjectWrapper implements Serializable {
     private List<PrismProperty> associations;
 
     private OperationResult fetchResult;
+    private PrismContainerDefinition editedDefinition;
+    private RefinedObjectClassDefinition refinedObjectClassDefinition;
+    
 
-    public ObjectWrapper(String displayName, String description, PrismObject object, ContainerStatus status) {
+    public ObjectWrapper(String displayName, String description, PrismObject object, PrismContainerDefinition editedDefinition, ContainerStatus status) {
 		Validate.notNull(object, "Object must not be null.");
 		Validate.notNull(status, "Container status must not be null.");
 
@@ -98,8 +103,13 @@ public class ObjectWrapper implements Serializable {
 		this.description = description;
 		this.object = object;
 		this.status = status;
+		this.editedDefinition = editedDefinition;
 
         createContainers();
+	}
+    public ObjectWrapper(String displayName, String description, PrismObject object, PrismContainerDefinition editedDefinition, RefinedObjectClassDefinition refinedObjectClassDefinition, ContainerStatus status) {
+		this(displayName, description, object, editedDefinition, status);
+        this.refinedObjectClassDefinition = refinedObjectClassDefinition;
 	}
 
     public List<PrismProperty> getAssociations() {
@@ -224,7 +234,8 @@ public class ObjectWrapper implements Serializable {
 		ContainerStatus status = container == null ? ContainerStatus.ADDING : ContainerStatus.MODIFYING;
 		List<ContainerWrapper> list = new ArrayList<ContainerWrapper>();
 		if (container == null) {
-			PrismContainerDefinition definition = object.getDefinition().findContainerDefinition(name);
+			PrismContainerDefinition definition = getDefinition().findContainerDefinition(name);
+//			PrismContainerDefinition definition = object.getDefinition().findContainerDefinition(name);
 			container = definition.instantiate();
 		}
 
@@ -244,6 +255,14 @@ public class ObjectWrapper implements Serializable {
         result.addSubresult(subResult);
     }
 
+//    private PrismObjectDefinition determineObjectDefinition(){
+//    	if (editedDefinition != null){
+//    		return editedDefinition;
+//    	}
+//    	
+//    	return object.getDefinition();
+//    }
+    
 	private List<ContainerWrapper> createContainers() {
         result = new OperationResult(CREATE_CONTAINERS);
 
@@ -257,6 +276,14 @@ public class ObjectWrapper implements Serializable {
 				if (attributes == null) {
 					PrismContainerDefinition definition = object.getDefinition().findContainerDefinition(
 							ShadowType.F_ATTRIBUTES);
+//					if (editedDefinition != null){
+//						definition = editedDefinition.findContainerDefinition(
+//								ShadowType.F_ATTRIBUTES);
+//					} else {
+//						definition = object.getDefinition().findContainerDefinition(
+//								ShadowType.F_ATTRIBUTES);
+//					}	
+//					
 					attributes = definition.instantiate();
 				}
 
@@ -385,6 +412,9 @@ public class ObjectWrapper implements Serializable {
 			}
             if (ObjectSpecificationType.COMPLEX_TYPE.equals(def.getTypeName())) {
                 continue;       // TEMPORARY FIX
+            }
+            if (TriggerType.COMPLEX_TYPE.equals(def.getTypeName())) {
+                continue;       // TEMPORARY FIX TODO: remove after getEditSchema (authorization) will be fixed.
             }
             LOGGER.trace("ObjectWrapper.createContainerWrapper processing definition: {}", def);
 
@@ -737,4 +767,18 @@ public class ObjectWrapper implements Serializable {
     public void setShowInheritedObjectAttributes(boolean showInheritedObjectAttributes) {
         this.showInheritedObjectAttributes = showInheritedObjectAttributes;
     }
+    
+    public PrismContainerDefinition getDefinition() {
+    	if (editedDefinition != null){
+    		return editedDefinition;
+    	}
+		return object.getDefinition();
+	}
+    
+    public PrismContainerDefinition getRefinedAttributeDefinition() {
+		if (refinedObjectClassDefinition != null){
+			return refinedObjectClassDefinition.toResourceAttributeContainerDefinition();
+		}
+    	return null;
+	}
 }

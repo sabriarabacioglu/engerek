@@ -62,7 +62,7 @@ import com.evolveum.midpoint.xml.ns._public.common.common_3.ValuePolicyType;
 @Component
 public class PasswordPolicyProcessor {
 	
-	private static final Trace LOGGER = TraceManager.getTrace(ObjectTemplateProcessor.class);
+	private static final Trace LOGGER = TraceManager.getTrace(PasswordPolicyProcessor.class);
 	
 	@Autowired(required = true)
 	Protector protector;
@@ -138,8 +138,13 @@ public class PasswordPolicyProcessor {
 				}
 			}
 		}
-		
-		ValuePolicyType passwordPolicy = determineValuePolicy(userDelta, focusContext.getObjectAny(), context, result);
+		ValuePolicyType passwordPolicy = null;
+		if (focusContext.getOrgPasswordPolicy() == null){
+			passwordPolicy = determineValuePolicy(userDelta, focusContext.getObjectAny(), context, result);
+			focusContext.setOrgPasswordPolicy(passwordPolicy);
+		} else {
+			passwordPolicy = focusContext.getOrgPasswordPolicy();
+		}
 		
 		processPasswordPolicy(passwordPolicy, password, result);
 
@@ -157,7 +162,11 @@ public class PasswordPolicyProcessor {
 		
 		//if still null, just use global policy
 		if (valuePolicy == null){
-			valuePolicy = context.getGlobalPasswordPolicy();
+			valuePolicy = context.getEffectivePasswordPolicy();
+		}
+		
+		if (valuePolicy != null){
+			LOGGER.trace("Value policy {} will be user to check password.", valuePolicy.getName().getOrig());
 		}
 		
 		return valuePolicy;
@@ -167,6 +176,7 @@ public class PasswordPolicyProcessor {
 			throws SchemaException {
 		ReferenceDelta orgDelta = userDelta.findReferenceModification(UserType.F_PARENT_ORG_REF);
 		ValuePolicyType passwordPolicy = null;
+		LOGGER.trace("Determining password policy from org delta.");
 		if (orgDelta != null) {
 			PrismReferenceValue orgRefValue = orgDelta.getAnyValue();
 
@@ -176,9 +186,10 @@ public class PasswordPolicyProcessor {
 				OrgType orgType = org.asObjectable();
 				ObjectReferenceType ref = orgType.getPasswordPolicyRef();
 				if (ref != null) {
-
+					LOGGER.trace("Org {} has specified password policy.", orgType);
 					passwordPolicy = resolver.resolve(ref, ValuePolicyType.class, null,
 							"resolving password policy for organization", result);
+					LOGGER.trace("Resolved password policy {}", passwordPolicy);
 				}
 
 				if (passwordPolicy == null) {
@@ -190,11 +201,13 @@ public class PasswordPolicyProcessor {
 			}
 
 		}
+		
 		return passwordPolicy;
 	}
 	
 	private ValuePolicyType determineValuePolicy(PrismObject object, OperationResult result)
 			throws SchemaException {
+		LOGGER.trace("Determining password policies from object", object);
 		PrismReference orgRef = object.findReference(ObjectType.F_PARENT_ORG_REF);
 		if (orgRef == null) {
 			return null;
@@ -225,6 +238,9 @@ public class PasswordPolicyProcessor {
 		if (valuePolicy == null) {
 			for (PrismObject<OrgType> orgType : orgs) {
 				valuePolicy = determineValuePolicy(orgType, result);
+				if (valuePolicy != null){
+					return valuePolicy;
+				}
 			}
 		}
 		return valuePolicy;
@@ -256,7 +272,7 @@ public class PasswordPolicyProcessor {
 		ObjectDelta accountDelta = projectionContext.getDelta();
 		
 		if (accountDelta == null){
-			LOGGER.trace("Skipping processing password policies. User delta not specified.");
+			LOGGER.trace("Skipping processing password policies. Shadow delta not specified.");
 			return;
 		}
 		
@@ -280,10 +296,10 @@ public class PasswordPolicyProcessor {
 				// Modification sanity check
 				if (accountDelta.getChangeType() == ChangeType.MODIFY && passwordValueDelta != null
 						&& (passwordValueDelta.isAdd() || passwordValueDelta.isDelete())) {
-					throw new SchemaException("User password value cannot be added or deleted, it can only be replaced");
+					throw new SchemaException("Shadow password value cannot be added or deleted, it can only be replaced");
 				}
 				if (passwordValueDelta == null) {
-					LOGGER.trace("Skipping processing password policies. User delta does not contain password change.");
+					LOGGER.trace("Skipping processing password policies. Shadow delta does not contain password change.");
 					return;
 				}
 				password = passwordValueDelta.getPropertyNew();
@@ -291,10 +307,34 @@ public class PasswordPolicyProcessor {
 		}
 
 //		PrismProperty<PasswordType> password = getPassword(projectionContext);
-		
-		ValuePolicyType passwordPolicy = projectionContext.getEffectivePasswordPolicy();
+		ValuePolicyType passwordPolicy = null;
+		if (isCheckOrgPolicy(context)){
+			passwordPolicy = determineValuePolicy(context.getFocusContext().getObjectAny(), result);
+			context.getFocusContext().setOrgPasswordPolicy(passwordPolicy);
+		} else {
+			passwordPolicy = projectionContext.getEffectivePasswordPolicy();
+		}
 		
 		processPasswordPolicy(passwordPolicy, password, result);
+	}
+	
+	private <F extends ObjectType> boolean isCheckOrgPolicy(LensContext<F> context) throws SchemaException{
+		LensFocusContext focusCtx = context.getFocusContext();
+		if (focusCtx.getDelta() != null){
+			if (focusCtx.getDelta().isAdd()){
+				return false;
+			}
+			
+			if (focusCtx.getDelta().isModify() && focusCtx.getDelta().hasItemDelta(SchemaConstants.PATH_PASSWORD_VALUE)){
+				return false;
+			}
+		}
+		
+		if (focusCtx.getOrgPasswordPolicy() != null){
+			return false;
+		}
+		
+		return true;
 	}
 
 
