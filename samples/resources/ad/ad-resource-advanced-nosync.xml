@@ -35,7 +35,7 @@ This resource definition contains only the very basic definitions for midPoint t
 	xmlns:icfs="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/resource-schema-3" xmlns:my="http://myself.me/schemas/whatever"
 	xsi:schemaLocation="http://midpoint.evolveum.com/xml/ns/public/common/common-3 ../../../infra/schema/src/main/resources/xml/ns/public/common/common-3.xsd">
 
-	<c:resource>
+	<c:resource oid="ef2bc95b-76e0-48e2-86d6-3d4f02d3eaef">
     
     	<!-- Resource name. It will be displayed in GUI.  -->
 		<name>Active Directory Advanced</name>
@@ -57,14 +57,14 @@ This resource definition contains only the very basic definitions for midPoint t
             <!-- Configuration specific for the Active Directory connector -->
 			<icfc:configurationProperties
 			xmlns:icfcad="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/ActiveDirectory.Connector/Org.IdentityConnectors.ActiveDirectory.ActiveDirectoryConnector">
-				<icfcad:DirectoryAdminName>Administrator</icfcad:DirectoryAdminName>
-				<icfcad:DirectoryAdminPassword><clearValue></clearValue></icfcad:DirectoryAdminPassword>
+				<icfcad:DirectoryAdminName>administrator</icfcad:DirectoryAdminName>
+				<icfcad:DirectoryAdminPassword><clearValue>secret</clearValue></icfcad:DirectoryAdminPassword>
 				<icfcad:ObjectClass>User</icfcad:ObjectClass>
-				<icfcad:Container></icfcad:Container>
+				<icfcad:Container>cn=Users,dc=example,dc=com</icfcad:Container>
 				<icfcad:CreateHomeDirectory>true</icfcad:CreateHomeDirectory>
 				<icfcad:LDAPHostName>localhost</icfcad:LDAPHostName><!-- This is the hostname of AD server as seen from the ConnectorServer instance! -->
 				<icfcad:SearchChildDomains>false</icfcad:SearchChildDomains>
-				<icfcad:DomainName></icfcad:DomainName>
+				<icfcad:DomainName>example.com</icfcad:DomainName>
   				<icfcad:SyncGlobalCatalogServer>null</icfcad:SyncGlobalCatalogServer>
 				<icfcad:SyncDomainController>null</icfcad:SyncDomainController>
 			</icfc:configurationProperties>
@@ -156,7 +156,7 @@ This resource definition contains only the very basic definitions for midPoint t
 						</source>
 						<expression>
 							<script>
-								<code>'cn=' + givenName + ' ' + familyName + iterationToken + ',cn=Users,dc=ulakbimtest,dc=local'</code>
+								<code>'cn=' + givenName + ' ' + familyName + iterationToken + ',cn=Users,dc=example,dc=com'</code>
 							</script>
 						</expression>
 					</outbound>
@@ -178,12 +178,28 @@ This resource definition contains only the very basic definitions for midPoint t
 						</source>
 					</outbound>
 				</attribute>
-				
+				<attribute><!-- This attribute must be set to
+other than "false". We will set it to "true" to expire the password
+immediately (after create). Note there is no "initial" attribute, because the
+current implementation of forms would set the __PASSWORD_EXPIRED__ = false by
+default, which is not what we want. But it works, because it is set to "true"
+on the create, and on the update of other attributes, this attribute is not
+changed, so this outbound will not be processed.
+Please note that AD itself does not support changing the _PASSWORD_EXPIRED__
+to "false". The only way of resetting the flag is to change user's password.
+-->
+					<ref>icfs:passwordExpired</ref>
+					<outbound>
+						<expression>
+							<value>true</value>
+						</expression>
+					</outbound>
+				</attribute>
 				<iteration>
 					<maxIterations>5</maxIterations>
 				</iteration>
 				<protected>
-                <icfs:name>cn=Administrator,cn=Users,dc=ulakbimtest,dc=local</icfs:name>
+                <icfs:name>cn=Administrator,cn=Users,dc=example,dc=com</icfs:name>
             </protected>
 				<activation>
 				    <administrativeStatus>
