@@ -53,7 +53,7 @@ public class AssignableAuthActionsPopup extends SimplePanel {
         		List<AutzActionsTableDto> authlist = new ArrayList();
         		for (DisplayableValue<String>[] ac : authColl){
         			for (int i=0; i<ac.length;i++ ){
-        				//System.out.println(ac[i].getLabel() +" "+ ac[i].getDescription() +" " + ac[i].getValue());
+        				System.out.println(ac[i].getLabel() +" "+ ac[i].getDescription() +" " + ac[i].getValue());
         			}
         			  //authlist.add(new AutzActionsTableDto(ac.getLabel(),ac.getDescription(),ac.getValue()));
         		}
