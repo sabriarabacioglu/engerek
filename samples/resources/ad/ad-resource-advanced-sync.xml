@@ -56,18 +56,18 @@ This resource definition contains only the very basic definitions for midPoint t
 		<connectorConfiguration>
 
 			<!-- Configuration specific for the Active Directory connector -->
-			<icfc:configurationProperties
-                xmlns:icfcad="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/ActiveDirectory.Connector/Org.IdentityConnectors.ActiveDirectory.ActiveDirectoryConnector">
+				<icfc:configurationProperties
+			xmlns:icfcad="http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/bundle/ActiveDirectory.Connector/Org.IdentityConnectors.ActiveDirectory.ActiveDirectoryConnector">
 				<icfcad:DirectoryAdminName>administrator</icfcad:DirectoryAdminName>
-				<icfcad:DirectoryAdminPassword><clearValue>secret</clearValue></icfcad:DirectoryAdminPassword>
+				<icfcad:DirectoryAdminPassword><clearValue>Qwerty123!</clearValue></icfcad:DirectoryAdminPassword>
 				<icfcad:ObjectClass>User</icfcad:ObjectClass>
-				<icfcad:Container>cn=Users,dc=example,dc=com</icfcad:Container>
+				<icfcad:Container>cn=Users,dc=ulakbimtest,dc=local</icfcad:Container>
 				<icfcad:CreateHomeDirectory>true</icfcad:CreateHomeDirectory>
 				<icfcad:LDAPHostName>localhost</icfcad:LDAPHostName><!-- This is the hostname of AD server as seen from the ConnectorServer instance! -->
 				<icfcad:SearchChildDomains>false</icfcad:SearchChildDomains>
-				<icfcad:DomainName>example.com</icfcad:DomainName>
-				<icfcad:SyncGlobalCatalogServer>localhost</icfcad:SyncGlobalCatalogServer><!-- hostname of DC to look up for changes when synchronizing -->
-				<icfcad:SyncDomainController>localhost</icfcad:SyncDomainController><!-- hostname of DC to look up for changes when synchronizing -->
+				<icfcad:DomainName>ulakbimtest.local</icfcad:DomainName>
+  				<icfcad:SyncGlobalCatalogServer>null</icfcad:SyncGlobalCatalogServer>
+				<icfcad:SyncDomainController>null</icfcad:SyncDomainController>
 			</icfc:configurationProperties>
 
 			<icfc:resultsHandlerConfiguration>  <!-- currently this requires latest Evolveum version of .net connector server -->
@@ -177,7 +177,7 @@ changed, so this outbound will not be processed.
 Please note that AD itself does not support changing the _PASSWORD_EXPIRED__
 to "false". The only way of resetting the flag is to change user's password.
 -->
-					<ref>ri:__PASSWORD_EXPIRED__</ref>
+					<ref>icfs:passwordExpired</ref>
 					<outbound>
 						<expression>
 							<value>true</value>
@@ -207,7 +207,7 @@ to "false". The only way of resetting the flag is to change user's password.
 						<expression>
 							<script>
 								<code>
-				'cn='+givenName+' '+familyName+iterationToken+',cn=Users,dc=example,dc=com'
+				'cn='+givenName+' '+familyName+iterationToken+',cn=Users,dc=ulakbimtest,dc=local'
 								</code>
 							</script>
 						</expression>
@@ -217,7 +217,7 @@ to "false". The only way of resetting the flag is to change user's password.
 					<maxIterations>5</maxIterations>
 				</iteration>
 				<protected>
-					<icfs:name>cn=Administrator,cn=Users,dc=example,dc=com</icfs:name>
+					<icfs:name>cn=Administrator,cn=Users,dc=ulakbimtest,dc=local</icfs:name>
 				</protected>
 				<activation>
 					<administrativeStatus>
