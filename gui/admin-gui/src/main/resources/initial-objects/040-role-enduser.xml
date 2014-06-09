@@ -16,7 +16,7 @@
   -->
 <role oid="00000000-0000-0000-0000-000000000008"
       xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3">
-    <name>Sun Kullanıcı</name>
+    <name>Son Kullanıcı</name>
     <description>Son kullanıcıya sisteme giriş, kendi şifresini değiştirme ve atanmış kalemleri görme yetkisi veren rol.</description>
     <authorization>
         <action>http://midpoint.evolveum.com/xml/ns/public/security/authorization-3#dashboard</action>

@@ -91,7 +91,7 @@ public class PageRole extends PageAdminRoles{
 
     private static final String ID_INDUCEMENTS = "inducementsPanel";
     private static final String ID_ASSIGNMENTS = "assignmentsPanel";
-
+    private static final String ID_AUTACTIONS = "autzActionsPanel";
 
     private static final String ID_LABEL_SIZE = "col-md-4";
     private static final String ID_INPUT_SIZE = "col-md-8";
@@ -299,7 +299,7 @@ public class PageRole extends PageAdminRoles{
         };
         form.add(inducements);
 
-      AutzActionsTablePanel  ap = new AutzActionsTablePanel("autzActionsPanel", selected_autz);
+      AutzActionsTablePanel  ap = new AutzActionsTablePanel(ID_AUTACTIONS, selected_autz);
       form.add(ap);
         
         initButtons(form);
@@ -353,7 +353,7 @@ public class PageRole extends PageAdminRoles{
                 AssignmentTablePanel inducementPanel = (AssignmentTablePanel)get(createComponentPath(ID_MAIN_FORM, ID_INDUCEMENTS));
                 inducementPanel.handleAssignmentsWhenAdd(newRole, inducementDef, newRole.asObjectable().getInducement());
 
-                AutzActionsTablePanel autzPanel = (AutzActionsTablePanel)get(createComponentPath(ID_MAIN_FORM, "autzActionsPanel"));
+                AutzActionsTablePanel autzPanel = (AutzActionsTablePanel)get(createComponentPath(ID_MAIN_FORM, ID_AUTACTIONS));
                 PrismContainer autzContainer = autzPanel.createAuthorizationsContainer(getPrismContext());
                 newRole.add(autzContainer);
             } else {
@@ -373,7 +373,7 @@ public class PageRole extends PageAdminRoles{
                     AssignmentTablePanel inducementPanel = (AssignmentTablePanel)get(createComponentPath(ID_MAIN_FORM, ID_INDUCEMENTS));
                     inducementPanel.handleAssignmentDeltas(delta, inducementDef, RoleType.F_INDUCEMENT);
                     
-                    AutzActionsTablePanel autzPanel = (AutzActionsTablePanel)get(createComponentPath(ID_MAIN_FORM, "autzActionsPanel"));
+                    AutzActionsTablePanel autzPanel = (AutzActionsTablePanel)get(createComponentPath(ID_MAIN_FORM, ID_AUTACTIONS));
                     PrismContainer autzContainerNew = autzPanel.createAuthorizationsContainer(getPrismContext());
                     
                     PrismContainer autzContainerOld = oldRole.findContainer(RoleType.F_AUTHORIZATION);
