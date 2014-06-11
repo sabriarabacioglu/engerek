@@ -17,8 +17,8 @@
 <task oid="00000000-0000-0000-0000-000000000005"
       xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3">
 
-    <name>Cleanup</name>
-    <description>A system task that repeatedly checks for outdated objects (e.g. closed tasks, old audit records) and removes them.</description>
+    <name>Temizleme</name>
+    <description>Kapanmış görevler, eski denetleme raporları gibi eski nesneleri denetleyen ve silen sistem görevidir.</description>
     <ownerRef oid="00000000-0000-0000-0000-000000000002"/>
     <executionStatus>runnable</executionStatus>
 

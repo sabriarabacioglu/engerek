@@ -17,8 +17,8 @@
 <task oid="00000000-0000-0000-0000-000000000007"
       xmlns="http://midpoint.evolveum.com/xml/ns/public/common/common-3">
 
-    <name>Trigger Scanner</name>
-    <description>A system task that executes triggers attached to objects.</description>
+    <name>Tetik tarayıcısı</name>
+    <description>Nesnelere iliştirilen tetiklerin yürütülmesini sağlayan sistem görevidir.</description>
     <ownerRef oid="00000000-0000-0000-0000-000000000002"/>
     <executionStatus>runnable</executionStatus>
 

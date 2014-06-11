@@ -22,16 +22,16 @@
         <t:norm>administrator</t:norm>
     </c:name>
     <c:fullName>
-        <t:orig>midPoint Administrator</t:orig>
-        <t:norm>midpoint administrator</t:norm>
+        <t:orig>Engerek Yöneticisi</t:orig>
+        <t:norm>engerek yöneticisi</t:norm>
     </c:fullName>
     <c:givenName>
-        <t:orig>midPoint</t:orig>
-        <t:norm>midpoint</t:norm>
+        <t:orig>Engerek</t:orig>
+        <t:norm>engerek</t:norm>
     </c:givenName>
     <c:familyName>
-        <t:orig>Administrator</t:orig>
-        <t:norm>administrator</t:norm>
+        <t:orig>Yöneticisi</t:orig>
+        <t:norm>yöneticisi</t:norm>
     </c:familyName>
     <c:assignment>
         <c:targetRef oid="00000000-0000-0000-0000-000000000004" type="c:RoleType"/>
