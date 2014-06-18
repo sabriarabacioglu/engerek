@@ -18,20 +18,20 @@
         xmlns:c="http://midpoint.evolveum.com/xml/ns/public/common/common-3"
         xmlns:t="http://prism.evolveum.com/xml/ns/public/types-3">
     <c:name>
-        <t:orig>admin</t:orig>
-        <t:norm>admin</t:norm>
+        <t:orig>administrator</t:orig>
+        <t:norm>administrator</t:norm>
     </c:name>
     <c:fullName>
-        <t:orig>Engerek Admin</t:orig>
-        <t:norm>Engerek admin</t:norm>
+        <t:orig>Administrator</t:orig>
+        <t:norm>administrator</t:norm>
     </c:fullName>
     <c:givenName>
         <t:orig>Engerek</t:orig>
-        <t:norm>Engerek</t:norm>
+        <t:norm>engerek</t:norm>
     </c:givenName>
     <c:familyName>
-        <t:orig>Admin</t:orig>
-        <t:norm>Admin</t:norm>
+        <t:orig>Yoneticisi</t:orig>
+        <t:norm>yoneticisi</t:norm>
     </c:familyName>
     <c:assignment>
         <c:targetRef oid="00000000-0000-0000-0000-000000000004" type="c:RoleType"/>
