@@ -39,7 +39,7 @@ This resource definition contains only the very basic definitions for midPoint t
 	<resource oid="ef2bc95b-76e0-48e2-86d6-3d4f02d3eaef">
 
 		<!-- Resource name. It will be displayed in GUI.  -->
-		<name>Active Directory Advanced Sync</name>
+		<name>Active Directory</name>
 
 		<!-- Reference to the ICF AD connector. OID is "virtual" for now. -->
 		<connectorRef type="ConnectorType">

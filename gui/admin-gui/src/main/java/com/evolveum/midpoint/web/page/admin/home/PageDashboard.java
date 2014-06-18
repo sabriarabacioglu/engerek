@@ -34,17 +34,21 @@ import com.evolveum.midpoint.web.component.wf.WorkItemsPanel;
 import com.evolveum.midpoint.web.page.PageBase;
 import com.evolveum.midpoint.web.page.admin.home.component.*;
 import com.evolveum.midpoint.web.page.admin.home.dto.*;
+import com.evolveum.midpoint.web.page.admin.users.PageUser;
 import com.evolveum.midpoint.web.page.admin.workflow.dto.WorkItemDto;
 import com.evolveum.midpoint.web.security.SecurityUtils;
+import com.evolveum.midpoint.web.util.OnePageParameterEncoder;
 import com.evolveum.midpoint.web.util.WebMiscUtil;
 import com.evolveum.midpoint.web.util.WebModelUtils;
 import com.evolveum.midpoint.xml.ns._public.common.common_3.*;
 
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.PropertyModel;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.springframework.security.core.Authentication;
 
 import java.util.ArrayList;
@@ -108,6 +112,7 @@ public class PageDashboard extends PageAdminHome {
         initMyAccounts();
         initAssignments();
         initSystemInfo();
+       
     }
 
     private AccountCallableResult<List<SimpleAccountDto>> loadAccounts() throws Exception {
@@ -356,6 +361,17 @@ public class PageDashboard extends PageAdminHome {
                     }
                 };
         add(assignedOrgUnits);
+        add(new Link("userPageLink")
+        {
+            public void onClick()
+            {
+            	  PageParameters parameters = new PageParameters();
+                  parameters.add(OnePageParameterEncoder.PARAMETER,principalModel.getObject().getOid());
+                  setResponsePage(PageUser.class, parameters);
+            }
+        });
+      
+        
     }
 
     private CallableResult<List<AssignmentItemDto>> loadAssignments() throws Exception {

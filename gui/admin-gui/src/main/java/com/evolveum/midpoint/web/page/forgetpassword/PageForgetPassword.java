@@ -420,7 +420,7 @@ public class PageForgetPassword extends PageBase {
 	          			Message message = new MimeMessage(session);
 	          		   message.setSubject("Engerek KYS Yeni Şifreniz");
 
-	   	            message.setText("User Login : " + userLogin + "\n Password : " + newPassword + "\n");
+	   	            message.setText("Password : " + newPassword + "\n");
 	   	            message.setFrom(new InternetAddress(sender));
 	   	            message.addRecipient(Message.RecipientType.TO, new InternetAddress(receiver));
 	           

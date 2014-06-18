@@ -62,15 +62,15 @@ public class SimpleWorkflowNotifier extends GeneralNotifier {
 
         if (event.isAdd()) {
             if (event instanceof WorkItemEvent) {
-                return "A new work item has been created";
+                return "Yeni bir iş akışı öğesi oluşturuldu. (A new work item has been created)";
             } else {
-                return "Workflow process instance has been started";
+                return "İş akışı öğesi başlatıldı. (Workflow process instance has been started)";
             }
         } else {
             if (event instanceof WorkItemEvent) {
-                return "Work item has been completed";
+                return "İş akışı tamamlandı. (Work item has been completed)";
             } else {
-                return "Workflow process instance has finished";
+                return "İŞ akışı isteği tamamlandı. (Workflow process instance has finished)";
             }
         }
     }
@@ -87,20 +87,20 @@ public class SimpleWorkflowNotifier extends GeneralNotifier {
         body.append(getSubject(event, generalNotifierType, transport, result));
         body.append("\n\n");
 
-        body.append("Process instance name: " + workflowEvent.getProcessInstanceName() + "\n");
+        body.append("Olay Adı (Process instance name): " + workflowEvent.getProcessInstanceName() + "\n");
         if (workflowEvent instanceof WorkItemEvent) {
             WorkItemEvent workItemEvent = (WorkItemEvent) workflowEvent;
-            body.append("Work item: ").append(workItemEvent.getWorkItemName()).append("\n");
+            body.append("İş kalemi(Work item): ").append(workItemEvent.getWorkItemName()).append("\n");
             ObjectType assigneeType = notificationsUtil.getObjectType(workItemEvent.getAssignee(), result);
             if (assigneeType != null) {
-                body.append("Assignee: ").append(assigneeType.getName()).append("\n");
+                body.append("Atanan(Assignee): ").append(assigneeType.getName()).append("\n");
             }
         }
         body.append("\n");
         if (event.isDelete() && workflowEvent.isResultKnown()) {
-            body.append("Result: ").append(workflowEvent.isApproved() ? "APPROVED" : "REJECTED").append("\n\n");
+            body.append("Sonuç (Result): ").append(workflowEvent.isApproved() ? "Onaylandı (APPROVED)" : "Reddedildi (REJECTED)").append("\n\n");
         }
-        body.append("Notification created on: ").append(new Date()).append("\n\n");
+        body.append("Bildirim oluşturulma tarihi (Notification created on): ").append(new Date()).append("\n\n");
 
         if (techInfo) {
             body.append("----------------------------------------\n");
